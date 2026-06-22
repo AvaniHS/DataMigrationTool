@@ -792,10 +792,10 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 ### Phase 7 — Hardening & Phase C Stubs
 
-- [ ] Stub `adapters/` and `executor/` with interfaces + docstrings
-- [ ] Expand integration test matrix (MySQL + MSSQL)
-- [ ] Performance notes: streaming hooks documented for executor
-- [ ] Error message polish; validation report JSON export
+- [x] Stub `adapters/` and `executor/` with interfaces + docstrings
+- [x] Expand integration test matrix (MySQL + MSSQL)
+- [x] Performance notes: streaming hooks documented for executor
+- [x] Error message polish; validation report JSON export
 
 **Exit criteria:** Codebase ready for Phase C without structural refactor.
 
@@ -843,7 +843,7 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 - [x] All `on_conflict` strategies implemented and tested
 - [x] Factories allow registering new dialect/output format without changing compiler core
 - [x] Adapters/executor stubs present for Phase C
-- [ ] Golden + integration tests pass on MySQL and MSSQL
+- [x] Golden + integration tests pass on MySQL and MSSQL
 - [x] Code structure matches Section 6; passes ruff; documented README
 
 ---

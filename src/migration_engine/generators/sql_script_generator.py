@@ -39,7 +39,7 @@ class SqlScriptGenerator(IScriptGenerator):
             return
 
         raise ScriptGenerationError(
-            f"Migration config validation failed with {len(report.issues)} issue(s).",
+            report.format_summary(),
             validation_report=report,
         )
 

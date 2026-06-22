@@ -15,6 +15,7 @@ pip install -e ".[dev]"
 ```bash
 py -m migration_engine validate --config docs/sampleConfigfile.json
 py -m migration_engine validate --config docs/sampleConfigfile.json --dialect MYSQL
+py -m migration_engine validate --config docs/sampleConfigfile.json --report-file output/validation.json
 ```
 
 ## Generate SQL
@@ -36,6 +37,9 @@ The `generate` command validates the config first, then writes a self-contained 
 ```bash
 pytest
 ```
+
+Phase C execution stubs (`adapters/`, `executor/`) are reserved for future Python-side
+streaming. See [docs/executor-streaming-design.md](docs/executor-streaming-design.md).
 
 ## Project layout
 

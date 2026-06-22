@@ -10,9 +10,10 @@ from migration_engine.factories.script_generator_factory import ScriptGeneratorF
 from migration_engine.generators.errors import ScriptGenerationError
 from migration_engine.logging.structured_logger import get_logger
 from migration_engine.models import MasterMigrationBlueprint
-from migration_engine.models.enums import DialectType, OutputFormat
+from migration_engine.models.enums import DialectType
 from migration_engine.parsers.blueprint_parser import BlueprintParseError, BlueprintParser
 from migration_engine.validators.migration_config_validator import MigrationConfigValidator
+from migration_engine.validators.report_writer import write_validation_report
 
 app = typer.Typer(
     name="migration-engine",
@@ -51,6 +52,8 @@ def _load_migration_config(config_path: Path) -> MasterMigrationBlueprint:
     except BlueprintParseError as exc:
         logger.error("parse_failed", error=str(exc), config=str(config_path))
         typer.echo(f"Parse error: {exc}", err=True)
+        if exc.details:
+            typer.echo(json.dumps({"parse_errors": exc.details}, indent=2), err=True)
         raise typer.Exit(EXIT_PARSE_FAILURE) from exc
 
 
@@ -63,6 +66,12 @@ def validate_command(
         "-d",
         help="Target SQL dialect used for connectivity rules.",
     ),
+    report_file: Path | None = typer.Option(
+        None,
+        "--report-file",
+        "-r",
+        help="Optional path to write the validation report as JSON.",
+    ),
 ) -> None:
     """Validate a migration blueprint configuration file."""
     config_path = _resolve_config_path(config)
@@ -72,7 +81,12 @@ def validate_command(
     validator = MigrationConfigValidator(compile_dialect=dialect_type)
     report = validator.validate(migration)
 
+    typer.echo(report.format_summary())
     typer.echo(json.dumps(report.to_dict(), indent=2))
+
+    if report_file is not None:
+        written = write_validation_report(report, report_file)
+        typer.echo(f"Validation report written: {written}")
 
     if report.is_valid:
         logger.info(
@@ -122,6 +136,7 @@ def generate_command(
         )
         typer.echo(f"Generation error: {exc}", err=True)
         if exc.validation_report is not None:
+            typer.echo(exc.validation_report.format_summary(), err=True)
             typer.echo(json.dumps(exc.validation_report.to_dict(), indent=2), err=True)
         raise typer.Exit(EXIT_COMPILATION_FAILURE) from exc
 

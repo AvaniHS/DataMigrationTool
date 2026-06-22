@@ -34,6 +34,9 @@ include = ["src/migration_engine", "config"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "integration: integration-style SQL structure tests",
+]
 
 [tool.ruff]
 line-length = 100

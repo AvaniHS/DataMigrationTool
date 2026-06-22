@@ -61,3 +61,19 @@ class ValidationReport:
                 for issue in self.issues
             ],
         }
+
+    def format_summary(self) -> str:
+        """Return a concise human-readable summary for CLI output."""
+        if self.is_valid:
+            return f"Validation passed for migration '{self.migration_id}'."
+
+        lines = [
+            f"Validation failed for migration '{self.migration_id}' "
+            f"with {len(self.issues)} issue(s):",
+        ]
+        for index, issue in enumerate(self.issues, start=1):
+            location = issue.path or "migration"
+            if issue.blueprint_sequence is not None:
+                location = f"{location} (blueprint {issue.blueprint_sequence})"
+            lines.append(f"  {index}. [{issue.code}] {location}: {issue.message}")
+        return "\n".join(lines)

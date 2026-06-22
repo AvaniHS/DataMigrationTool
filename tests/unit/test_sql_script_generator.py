@@ -49,5 +49,5 @@ def test_generate_raises_when_config_invalid(migration) -> None:
         update={"blueprints": ()},
     )
 
-    with pytest.raises(ScriptGenerationError, match="validation failed"):
+    with pytest.raises(ScriptGenerationError, match="Validation failed"):
         generator.generate(invalid)
