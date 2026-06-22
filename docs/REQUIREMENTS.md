@@ -758,10 +758,10 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 > Implements **Section 4A** (`CtePipelineBuilder`, `CteStage`, deterministic CTE naming).
 
-- [ ] `CtePipelineBuilder`: pre-filters → joins → derivations → post-filters → projection
-- [ ] Derivation reference resolution (`derivations.xxx`)
-- [ ] Mapping projection with safe casts
-- [ ] Unit tests per pipeline stage
+- ✓ `CtePipelineBuilder`: pre-filters → joins → derivations → post-filters → projection
+- ✓ Derivation reference resolution (`derivations.xxx`)
+- ✓ Mapping projection with safe casts
+- ✓ Unit tests per pipeline stage
 
 **Exit criteria:** Single-blueprint, single-source SQL fragment matches golden snippets.
 
