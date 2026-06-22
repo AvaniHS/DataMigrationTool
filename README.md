@@ -1,6 +1,6 @@
 # Migration Engine
 
-Configuration-driven, multi-tenant ELT migration tool. Phase 1 delivers JSON blueprint parsing and validation.
+Configuration-driven, multi-tenant ELT migration tool that turns JSON blueprints into runnable MySQL SQL scripts.
 
 ## Setup
 
@@ -14,7 +14,22 @@ pip install -e ".[dev]"
 
 ```bash
 py -m migration_engine validate --config docs/sampleConfigfile.json
+py -m migration_engine validate --config docs/sampleConfigfile.json --dialect MYSQL
 ```
+
+## Generate SQL
+
+```bash
+py -m migration_engine generate --config docs/sampleConfigfile.json --output output/migration.sql
+py -m migration_engine generate --config docs/sampleConfigfile.json --output output/migration.sql --dialect MYSQL
+```
+
+The `generate` command validates the config first, then writes a self-contained script with:
+
+- Source bootstrap preambles for MySQL, MSSQL, PostgreSQL, and S3 CSV sources
+- CTE pipeline per blueprint
+- Chunking loop for large blueprints (when enabled)
+- Per-blueprint transaction and savepoint boundaries
 
 ## Run tests
 

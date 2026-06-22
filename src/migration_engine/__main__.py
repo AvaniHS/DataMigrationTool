@@ -6,8 +6,11 @@ from pathlib import Path
 
 import typer
 
+from migration_engine.factories.script_generator_factory import ScriptGeneratorFactory
+from migration_engine.generators.errors import ScriptGenerationError
 from migration_engine.logging.structured_logger import get_logger
-from migration_engine.models.enums import DialectType
+from migration_engine.models import MasterMigrationBlueprint
+from migration_engine.models.enums import DialectType, OutputFormat
 from migration_engine.parsers.blueprint_parser import BlueprintParseError, BlueprintParser
 from migration_engine.validators.migration_config_validator import MigrationConfigValidator
 
@@ -22,10 +25,33 @@ logger = get_logger(__name__)
 EXIT_SUCCESS = 0
 EXIT_VALIDATION_FAILURE = 1
 EXIT_PARSE_FAILURE = 2
+EXIT_COMPILATION_FAILURE = 2
 
 
 def _resolve_config_path(config: Path) -> Path:
     return config.expanduser().resolve()
+
+
+def _resolve_output_path(output: Path) -> Path:
+    return output.expanduser().resolve()
+
+
+def _parse_dialect(dialect: str) -> DialectType:
+    try:
+        return DialectType(dialect.upper())
+    except ValueError as exc:
+        typer.echo(f"Unsupported dialect: {dialect}", err=True)
+        raise typer.Exit(EXIT_VALIDATION_FAILURE) from exc
+
+
+def _load_migration_config(config_path: Path) -> MasterMigrationBlueprint:
+    parser = BlueprintParser()
+    try:
+        return parser.parse_file(config_path)
+    except BlueprintParseError as exc:
+        logger.error("parse_failed", error=str(exc), config=str(config_path))
+        typer.echo(f"Parse error: {exc}", err=True)
+        raise typer.Exit(EXIT_PARSE_FAILURE) from exc
 
 
 @app.command("validate")
@@ -40,37 +66,25 @@ def validate_command(
 ) -> None:
     """Validate a migration blueprint configuration file."""
     config_path = _resolve_config_path(config)
-    parser = BlueprintParser()
-
-    try:
-        blueprint = parser.parse_file(config_path)
-    except BlueprintParseError as exc:
-        logger.error("parse_failed", error=str(exc), config=str(config_path))
-        typer.echo(f"Parse error: {exc}", err=True)
-        raise typer.Exit(EXIT_PARSE_FAILURE) from exc
-
-    try:
-        dialect_type = DialectType(dialect.upper())
-    except ValueError as exc:
-        typer.echo(f"Unsupported dialect: {dialect}", err=True)
-        raise typer.Exit(EXIT_VALIDATION_FAILURE) from exc
+    migration = _load_migration_config(config_path)
+    dialect_type = _parse_dialect(dialect)
 
     validator = MigrationConfigValidator(compile_dialect=dialect_type)
-    report = validator.validate(blueprint)
+    report = validator.validate(migration)
 
     typer.echo(json.dumps(report.to_dict(), indent=2))
 
     if report.is_valid:
         logger.info(
             "validation_succeeded",
-            migration_id=blueprint.migration_id,
-            blueprint_count=len(blueprint.blueprints),
+            migration_id=migration.migration_id,
+            blueprint_count=len(migration.blueprints),
         )
         raise typer.Exit(EXIT_SUCCESS)
 
     logger.warning(
         "validation_failed",
-        migration_id=blueprint.migration_id,
+        migration_id=migration.migration_id,
         issue_count=len(report.issues),
     )
     raise typer.Exit(EXIT_VALIDATION_FAILURE)
@@ -88,8 +102,40 @@ def generate_command(
     ),
 ) -> None:
     """Generate a migration SQL script from a validated blueprint."""
-    typer.echo("SQL generation is implemented in Phase 6.", err=True)
-    raise typer.Exit(2)
+    config_path = _resolve_config_path(config)
+    output_path = _resolve_output_path(output)
+    migration = _load_migration_config(config_path)
+    dialect_type = _parse_dialect(dialect)
+
+    generator = ScriptGeneratorFactory.create(
+        migration.output_format.value,
+        dialect_type=dialect_type.value,
+    )
+
+    try:
+        script = generator.generate(migration)
+    except ScriptGenerationError as exc:
+        logger.error(
+            "generation_failed",
+            migration_id=migration.migration_id,
+            error=str(exc),
+        )
+        typer.echo(f"Generation error: {exc}", err=True)
+        if exc.validation_report is not None:
+            typer.echo(json.dumps(exc.validation_report.to_dict(), indent=2), err=True)
+        raise typer.Exit(EXIT_COMPILATION_FAILURE) from exc
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(script.content, encoding="utf-8")
+
+    logger.info(
+        "generation_succeeded",
+        migration_id=script.migration_id,
+        output_format=script.output_format,
+        output=str(output_path),
+    )
+    typer.echo(f"Generated SQL script: {output_path}")
+    raise typer.Exit(EXIT_SUCCESS)
 
 
 def main() -> None:

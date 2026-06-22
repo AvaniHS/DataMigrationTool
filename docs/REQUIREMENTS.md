@@ -722,35 +722,35 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 ## 9. Implementation Phases (Step-by-Step Plan)
 
-**Status legend:** `✓` = complete · `[ ]` = not started / in progress
+**Status legend:** `[x]` = complete · `[ ]` = not started / in progress
 
 ### Phase 0 — Foundation
 
-- ✓ Scaffold project (`pyproject.toml`, folder structure, ruff, pytest)
-- ✓ Define enums: `ConnectionType`, `SourceType`, `ConflictStrategy`, `OutputFormat`
-- ✓ Define frozen DTOs (`MasterMigrationBlueprint` and nested models)
-- ✓ Define ABCs: `BaseDialect`, `IScriptGenerator`, `IConflictStrategy`, `IConnectionAdapter` (stub)
-- ✓ Implement factories (empty registries with MySQL/SQL only)
-- ✓ Structured logger setup (minimal)
+- [x] Scaffold project (`pyproject.toml`, folder structure, ruff, pytest)
+- [x] Define enums: `ConnectionType`, `SourceType`, `ConflictStrategy`, `OutputFormat`
+- [x] Define frozen DTOs (`MasterMigrationBlueprint` and nested models)
+- [x] Define ABCs: `BaseDialect`, `IScriptGenerator`, `IConflictStrategy`, `IConnectionAdapter` (stub)
+- [x] Implement factories (empty registries with MySQL/SQL only)
+- [x] Structured logger setup (minimal)
 
 **Exit criteria:** `pip install -e .` works; empty tests pass; factories return typed stubs.
 
 ### Phase 1 — Parser + Validator
 
-- ✓ `BlueprintParser`: JSON file → `MasterMigrationBlueprint`
-- ✓ `SchemaValidator`: required fields, refs, sequence_order uniqueness
-- ✓ `ExpressionValidator`: whitelist functions/operators from YAML
-- ✓ `ConnectivityValidator`: source type × target dialect support matrix
-- ✓ CLI `validate` command
-- ✓ Unit tests for valid/invalid configs
+- [x] `BlueprintParser`: JSON file → `MasterMigrationBlueprint`
+- [x] `SchemaValidator`: required fields, refs, sequence_order uniqueness
+- [x] `ExpressionValidator`: whitelist functions/operators from YAML
+- [x] `ConnectivityValidator`: source type × target dialect support matrix
+- [x] CLI `validate` command
+- [x] Unit tests for valid/invalid configs
 
 **Exit criteria:** `sampleConfigfile.json` validates cleanly; intentional bad configs fail with clear errors.
 
 ### Phase 2 — MySQL Dialect + Conflict Strategies
 
-- ✓ `MySqlDialect`: safe_cast, concat, regexp, transaction/savepoint keywords
-- ✓ All conflict strategy implementations for MySQL
-- ✓ Unit tests per strategy and cast helper
+- [x] `MySqlDialect`: safe_cast, concat, regexp, transaction/savepoint keywords
+- [x] All conflict strategy implementations for MySQL
+- [x] Unit tests per strategy and cast helper
 
 **Exit criteria:** Dialect and strategies tested in isolation (no full compiler yet).
 
@@ -758,35 +758,35 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 > Implements **Section 4A** (`CtePipelineBuilder`, `CteStage`, deterministic CTE naming).
 
-- ✓ `CtePipelineBuilder`: pre-filters → joins → derivations → post-filters → projection
-- ✓ Derivation reference resolution (`derivations.xxx`)
-- ✓ Mapping projection with safe casts
-- ✓ Unit tests per pipeline stage
+- [x] `CtePipelineBuilder`: pre-filters → joins → derivations → post-filters → projection
+- [x] Derivation reference resolution (`derivations.xxx`)
+- [x] Mapping projection with safe casts
+- [x] Unit tests per pipeline stage
 
 **Exit criteria:** Single-blueprint, single-source SQL fragment matches golden snippets.
 
 ### Phase 4 — Source Bootstrap + Multi-Source
 
-- ✓ `SourceBootstrapCompiler`: preamble for MySQL, MSSQL, PG, S3 CSV sources
-- ✓ Document supported connection patterns per source type
-- ✓ Integration tests: generated script runs against MySQL target with MSSQL/MySQL sources
+- [x] `SourceBootstrapCompiler`: preamble for MySQL, MSSQL, PG, S3 CSV sources
+- [x] Document supported connection patterns per source type
+- [x] Integration tests: generated script runs against MySQL target with MSSQL/MySQL sources
 
 **Exit criteria:** Blueprint 1 and 2 from sample config produce runnable scripts.
 
 ### Phase 5 — Chunking + Transactions
 
-- ✓ `ChunkingProceduralBuilder`: WHILE loop + chunk variables
-- ✓ `TransactionBuilder`: SAVEPOINT per blueprint step, COMMIT per step
-- ✓ Multi-blueprint orchestration in `MigrationCompiler`
-- ✓ Golden-file test: full `sampleConfigfile.json` → expected SQL
+- [x] `ChunkingProceduralBuilder`: WHILE loop + chunk variables
+- [x] `TransactionBuilder`: SAVEPOINT per blueprint step, COMMIT per step
+- [x] Multi-blueprint orchestration in `MigrationCompiler`
+- [x] Golden-file test: full `sampleConfigfile.json` → expected SQL
 
 **Exit criteria:** Full sample config generates one `.sql` file; manual run loads data on MySQL target.
 
 ### Phase 6 — SqlScriptGenerator + CLI
 
-- [ ] Wire `SqlScriptGenerator` through factories
-- [ ] CLI `generate` command
-- [ ] README with usage examples
+- [x] Wire `SqlScriptGenerator` through factories
+- [x] CLI `generate` command
+- [x] README with usage examples
 
 **Exit criteria:** End-to-end Phase A complete; reviewer can run validate + generate.
 
@@ -835,16 +835,16 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 ## 12. Success Criteria (v1 Sign-Off)
 
-**Status legend:** `✓` = complete · `[ ]` = not started / in progress
+**Status legend:** `[x]` = complete · `[ ]` = not started / in progress
 
-- ✓ `validate` catches all invalid configs before generation
-- [ ] `generate` produces one runnable MySQL script from `sampleConfigfile.json`
-- ✓ Script includes source bootstrap, CTE pipeline, chunking loop (blueprint 2), savepoints per step
-- ✓ All `on_conflict` strategies implemented and tested
-- ✓ Factories allow registering new dialect/output format without changing compiler core
-- ✓ Adapters/executor stubs present for Phase C
+- [x] `validate` catches all invalid configs before generation
+- [x] `generate` produces one runnable MySQL script from `sampleConfigfile.json`
+- [x] Script includes source bootstrap, CTE pipeline, chunking loop (blueprint 2), savepoints per step
+- [x] All `on_conflict` strategies implemented and tested
+- [x] Factories allow registering new dialect/output format without changing compiler core
+- [x] Adapters/executor stubs present for Phase C
 - [ ] Golden + integration tests pass on MySQL and MSSQL
-- ✓ Code structure matches Section 6; passes ruff; documented README
+- [x] Code structure matches Section 6; passes ruff; documented README
 
 ---
 
