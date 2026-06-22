@@ -1,7 +1,7 @@
-"""Conflict strategy interface — implemented in Phase 2."""
+"""Conflict strategy interface and shared insert context."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -12,6 +12,9 @@ class InsertContext:
     target_table: str
     columns: list[str]
     projection_cte: str
+    primary_keys: list[str] = field(default_factory=list)
+    audit_table: str | None = None
+    unprocessed_table: str | None = None
 
 
 class IConflictStrategy(ABC):

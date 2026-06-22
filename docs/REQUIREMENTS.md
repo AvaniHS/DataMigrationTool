@@ -722,33 +722,35 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 ## 9. Implementation Phases (Step-by-Step Plan)
 
+**Status legend:** `✓` = complete · `[ ]` = not started / in progress
+
 ### Phase 0 — Foundation
 
-- [ ] Scaffold project (`pyproject.toml`, folder structure, ruff, pytest)
-- [ ] Define enums: `ConnectionType`, `SourceType`, `ConflictStrategy`, `OutputFormat`
-- [ ] Define frozen DTOs (`MasterMigrationBlueprint` and nested models)
-- [ ] Define ABCs: `BaseDialect`, `IScriptGenerator`, `IConflictStrategy`, `IConnectionAdapter` (stub)
-- [ ] Implement factories (empty registries with MySQL/SQL only)
-- [ ] Structured logger setup (minimal)
+- ✓ Scaffold project (`pyproject.toml`, folder structure, ruff, pytest)
+- ✓ Define enums: `ConnectionType`, `SourceType`, `ConflictStrategy`, `OutputFormat`
+- ✓ Define frozen DTOs (`MasterMigrationBlueprint` and nested models)
+- ✓ Define ABCs: `BaseDialect`, `IScriptGenerator`, `IConflictStrategy`, `IConnectionAdapter` (stub)
+- ✓ Implement factories (empty registries with MySQL/SQL only)
+- ✓ Structured logger setup (minimal)
 
 **Exit criteria:** `pip install -e .` works; empty tests pass; factories return typed stubs.
 
 ### Phase 1 — Parser + Validator
 
-- [ ] `BlueprintParser`: JSON file → `MasterMigrationBlueprint`
-- [ ] `SchemaValidator`: required fields, refs, sequence_order uniqueness
-- [ ] `ExpressionValidator`: whitelist functions/operators from YAML
-- [ ] `ConnectivityValidator`: source type × target dialect support matrix
-- [ ] CLI `validate` command
-- [ ] Unit tests for valid/invalid configs
+- ✓ `BlueprintParser`: JSON file → `MasterMigrationBlueprint`
+- ✓ `SchemaValidator`: required fields, refs, sequence_order uniqueness
+- ✓ `ExpressionValidator`: whitelist functions/operators from YAML
+- ✓ `ConnectivityValidator`: source type × target dialect support matrix
+- ✓ CLI `validate` command
+- ✓ Unit tests for valid/invalid configs
 
 **Exit criteria:** `sampleConfigfile.json` validates cleanly; intentional bad configs fail with clear errors.
 
 ### Phase 2 — MySQL Dialect + Conflict Strategies
 
-- [ ] `MySqlDialect`: safe_cast, concat, regexp, transaction/savepoint keywords
-- [ ] All conflict strategy implementations for MySQL
-- [ ] Unit tests per strategy and cast helper
+- ✓ `MySqlDialect`: safe_cast, concat, regexp, transaction/savepoint keywords
+- ✓ All conflict strategy implementations for MySQL
+- ✓ Unit tests per strategy and cast helper
 
 **Exit criteria:** Dialect and strategies tested in isolation (no full compiler yet).
 
@@ -833,14 +835,16 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 ## 12. Success Criteria (v1 Sign-Off)
 
-- [ ] `validate` catches all invalid configs before generation
+**Status legend:** `✓` = complete · `[ ]` = not started / in progress
+
+- ✓ `validate` catches all invalid configs before generation
 - [ ] `generate` produces one runnable MySQL script from `sampleConfigfile.json`
 - [ ] Script includes source bootstrap, CTE pipeline, chunking loop (blueprint 2), savepoints per step
-- [ ] All `on_conflict` strategies implemented and tested
-- [ ] Factories allow registering new dialect/output format without changing compiler core
-- [ ] Adapters/executor stubs present for Phase C
+- ✓ All `on_conflict` strategies implemented and tested
+- ✓ Factories allow registering new dialect/output format without changing compiler core
+- ✓ Adapters/executor stubs present for Phase C
 - [ ] Golden + integration tests pass on MySQL and MSSQL
-- [ ] Code structure matches Section 6; passes ruff; documented README
+- ✓ Code structure matches Section 6; passes ruff; documented README
 
 ---
 
