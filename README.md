@@ -43,6 +43,8 @@ streaming. See [docs/executor-streaming-design.md](docs/executor-streaming-desig
 
 ## Project layout
 
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system design, diagrams, and design patterns.
+
 See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for the full specification and implementation phases.
 
 Source bootstrap patterns: [docs/source-bootstrap-patterns.md](docs/source-bootstrap-patterns.md)

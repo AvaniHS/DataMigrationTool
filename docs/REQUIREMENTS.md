@@ -3,7 +3,8 @@
 **Version:** 1.0.0-draft  
 **Status:** For review — implementation to follow step-by-step after approval  
 **First target dialect:** MySQL  
-**First deliverable:** SQL script generation only (Phase A), architected for full ELT execution (Phase C)
+**First deliverable:** SQL script generation only (Phase A), architected for full ELT execution (Phase C)  
+**Architecture:** See [ARCHITECTURE.md](ARCHITECTURE.md) for implementation-aligned system design, diagrams, and design patterns.
 
 ---
 
