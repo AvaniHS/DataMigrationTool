@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "migration_id": "mig_multi_server_enterprise_2026",
+  "client_id": "client_global_retail_corp",
+  "version": "1.0.0",
+  
+  "connections": {
+    "target_production_system": {
+      "type": "POSTGRESQL",
+      "connection_string": "postgresql://app_arch:secure_pass@cloud-cluster:5432/core_erp"
+    },
+    "client_crm_mysql": {
+      "type": "MYSQL",
+      "connection_string": "mysql://read_user:pass@client-crm-ip:3306/crm_db"
+    },
+    "client_billing_mssql": {
+      "type": "MSSQL",
+      "connection_string": "sqlserver://read_user:pass@client-billing-ip:1433/finance_db"
+    },
+    "client_archival_s3": {
+      "type": "CSV_S3_BUCKET",
+      "s3_bucket_uri": "s3://client-migration-dump/historical_archives/",
+      "aws_region": "us-west-2"
+    },
+    "client_pos_logs": {
+      "type": "POSTGRESQL",
+      "connection_string": "postgresql://pos_viewer:pass@client-pos-ip:5432/retail_logs"
+    }
+  },
+
+  "blueprints": [
+    {
+      "sequence_order": 1,
+      "target": {
+        "connection_ref": "target_production_system",
+        "schema": "core",
+        "table_name": "customers",
+        "primary_keys": ["id"],
+        "on_conflict": "UPSERT"
+      },
+      "sources": {
+        "root_table": {
+          "comment": "Pulling customer profiles directly from the client's live MySQL CRM Server",
+          "connection_ref": "client_crm_mysql",
+          "schema": "crm_db",
+          "table_name": "customer_master",
+          "alias": "cm"
+        },
+        "joins": [
+          {
+            "join_type": "LEFT",
+            "comment": "Joining physical metadata from an offline CSV dump hosted on S3",
+            "connection_ref": "client_archival_s3",
+            "file_name": "geo_address_mapping.csv",
+            "alias": "gam",
+            "conditions": [
+              { "left_expression": "gam.legacy_cust_id", "operator": "=", "right_expression": "cm.id" }
+            ]
+          }
+        ]
+      },
+      "chunking_strategy": { "is_enabled": false, "chunk_by_column": null, "chunk_size": null },
+      "pre_filters": [
+        "cm.status = 'ACTIVE'"
+      ],
+      "derivations": [
+        {
+          "variable_name": "formatted_phone",
+          "expression": "REGEXP_REPLACE(cm.phone_raw, '[^0-9+]', '')"
+        }
+      ],
+      "post_filters": [],
+      "mappings": [
+        { "target_column": "id", "source_type": "DIRECT", "source_value": "cm.global_uuid", "cast_to": "UUID", "is_nullable": false },
+        { "target_column": "company_name", "source_type": "DIRECT", "source_value": "cm.company_legal_name", "cast_to": "VARCHAR(255)", "is_nullable": false },
+        { "target_column": "phone", "source_type": "DERIVED", "source_value": "derivations.formatted_phone", "cast_to": "VARCHAR(32)", "is_nullable": true },
+        { "target_column": "country_iso", "source_type": "EXPRESSION", "source_value": "COALESCE(gam.country_code, 'USA')", "cast_to": "VARCHAR(3)", "is_nullable": false }
+      ]
+    },
+    {
+      "sequence_order": 2,
+      "target": {
+        "connection_ref": "target_production_system",
+        "schema": "billing",
+        "table_name": "billing_details",
+        "primary_keys": ["tenant_id", "invoice_no", "line_item_id"],
+        "on_conflict": "UPSERT"
+      },
+      "sources": {
+        "root_table": {
+          "comment": "Pulling invoice headers from the client's centralized SQL Server database",
+          "connection_ref": "client_billing_mssql",
+          "schema": "dbo",
+          "table_name": "tbl_invoice_hdr",
+          "alias": "tih"
+        },
+        "joins": [
+          {
+            "join_type": "INNER",
+            "comment": "Invoice lines are inside the exact same SQL Server as the headers",
+            "connection_ref": "client_billing_mssql",
+            "schema": "dbo",
+            "table_name": "tbl_invoice_lines",
+            "alias": "til",
+            "conditions": [
+              { "left_expression": "til.hdr_id", "operator": "=", "right_expression": "tih.id" }
+            ]
+          },
+          {
+            "join_type": "LEFT",
+            "comment": "JOIN SCENARIO WITH COMPLEX CASE KEYS: Pulling store details from a separate POS live server",
+            "connection_ref": "client_pos_logs",
+            "schema": "public",
+            "table_name": "store_terminals",
+            "alias": "st",
+            "conditions": [
+              {
+                "left_expression": "CASE WHEN tih.channel_type = 'RETAIL' THEN tih.terminal_identifier ELSE tih.fallback_hq_identifier END",
+                "operator": "=",
+                "right_expression": "st.terminal_uid"
+              }
+            ]
+          }
+        ]
+      },
+      "chunking_strategy": {
+        "is_enabled": true,
+        "chunk_by_column": "tih.id",
+        "chunk_size": 25000
+      },
+      "pre_filters": [
+        "tih.invoice_date >= '2022-01-01'"
+      ],
+      "derivations": [
+        { "variable_name": "system_invoice_key", "expression": "CONCAT(COALESCE(st.store_prefix, 'WEB'), '-', tih.invoice_number)" },
+        { "variable_name": "calculated_line_cost", "expression": "(til.unit_price * til.quantity_billed)" }
+      ],
+      "post_filters": [],
+      "mappings": [
+        { "target_column": "tenant_id", "source_type": "CONSTANT", "source_value": "'RETAIL_ENTERPRISE_GLOBAL'", "cast_to": "VARCHAR(64)", "is_nullable": false },
+        { "target_column": "invoice_no", "source_type": "DERIVED", "source_value": "derivations.system_invoice_key", "cast_to": "VARCHAR(128)", "is_nullable": false },
+        { "target_column": "line_item_id", "source_type": "DIRECT", "source_value": "til.line_id", "cast_to": "BIGINT", "is_nullable": false },
+        { "target_column": "subtotal_amount", "source_type": "DERIVED", "source_value": "derivations.calculated_line_cost", "cast_to": "DECIMAL(12,4)", "is_nullable": false },
+        { "target_column": "tax_amount", "source_type": "EXPRESSION", "source_value": "CASE WHEN tih.tax_exempt_flag = 1 THEN 0.0000 ELSE (derivations.calculated_line_cost * 0.18) END", "cast_to": "DECIMAL(12,4)", "is_nullable": false },
+        { "target_column": "invoice_date", "source_type": "DIRECT", "source_value": "tih.invoice_date", "cast_to": "DATE", "is_nullable": false }
+      ]
+    },
+    {
+      "sequence_order": 3,
+      "target": {
+        "connection_ref": "target_production_system",
+        "schema": "billing",
+        "table_name": "billing_details",
+        "comment": "MULTI-SOURCE UNION SCENARIO: Appending historical records using archival files from S3 server",
+        "primary_keys": ["tenant_id", "invoice_no", "line_item_id"],
+        "on_conflict": "UPSERT"
+      },
+      "sources": {
+        "root_table": {
+          "connection_ref": "client_archival_s3",
+          "file_name": "historical_invoice_headers_2021.csv",
+          "alias": "hih"
+        },
+        "joins": [
+          {
+            "join_type": "INNER",
+            "connection_ref": "client_archival_s3",
+            "file_name": "historical_invoice_lines_2021.csv",
+            "alias": "hil",
+            "conditions": [
+              { "left_expression": "hil.parent_invoice_id", "operator": "=", "right_expression": "hih.raw_id" }
+            ]
+          }
+        ]
+      },
+      "chunking_strategy": { "is_enabled": false, "chunk_by_column": null, "chunk_size": null },
+      "pre_filters": [],
+      "derivations": [
+        { "variable_name": "historical_key", "expression": "CONCAT('ARCHIVE-', hih.raw_id)" }
+      ],
+      "post_filters": [],
+      "mappings": [
+        { "target_column": "tenant_id", "source_type": "CONSTANT", "source_value": "'RETAIL_ENTERPRISE_GLOBAL'", "cast_to": "VARCHAR(64)", "is_nullable": false },
+        { "target_column": "invoice_no", "source_type": "DERIVED", "source_value": "derivations.historical_key", "cast_to": "VARCHAR(128)", "is_nullable": false },
+        { "target_column": "line_item_id", "source_type": "DIRECT", "source_value": "hil.row_index", "cast_to": "BIGINT", "is_nullable": false },
+        { "target_column": "subtotal_amount", "source_type": "DIRECT", "source_value": "hil.net_cost", "cast_to": "DECIMAL(12,4)", "is_nullable": false },
+        { "target_column": "tax_amount", "source_type": "DIRECT", "source_value": "hil.tax_cost", "cast_to": "DECIMAL(12,4)", "is_nullable": false },
+        { "target_column": "invoice_date", "source_type": "DIRECT", "source_value": "hih.post_date", "cast_to": "DATE", "is_nullable": false }
+      ]
+    }
+  ]
+}

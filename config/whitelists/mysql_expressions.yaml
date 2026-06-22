@@ -1,0 +1,71 @@
+functions:
+  - ABS
+  - CASE
+  - CAST
+  - COALESCE
+  - CONCAT
+  - DATE
+  - DATE_FORMAT
+  - IF
+  - IFNULL
+  - LEFT
+  - LENGTH
+  - LOWER
+  - LPAD
+  - NULLIF
+  - REGEXP_REPLACE
+  - REPLACE
+  - RIGHT
+  - ROUND
+  - RPAD
+  - STR_TO_DATE
+  - SUBSTRING
+  - TRIM
+  - UPPER
+
+keywords:
+  - AND
+  - AS
+  - BETWEEN
+  - ELSE
+  - END
+  - FALSE
+  - IN
+  - IS
+  - LIKE
+  - NOT
+  - NULL
+  - OR
+  - THEN
+  - TRUE
+  - WHEN
+
+operators:
+  - "!="
+  - "%"
+  - "*"
+  - "+"
+  - "-"
+  - "/"
+  - "<"
+  - "<="
+  - "<>"
+  - "="
+  - ">"
+  - ">="
+
+allowed_cast_types:
+  - BIGINT
+  - CHAR
+  - DATE
+  - DATETIME
+  - DECIMAL
+  - DOUBLE
+  - INT
+  - INTEGER
+  - JSON
+  - TEXT
+  - TIME
+  - TIMESTAMP
+  - UUID
+  - VARCHAR
