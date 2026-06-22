@@ -767,9 +767,9 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 ### Phase 4 — Source Bootstrap + Multi-Source
 
-- [ ] `SourceBootstrapCompiler`: preamble for MySQL, MSSQL, PG, S3 CSV sources
-- [ ] Document supported connection patterns per source type
-- [ ] Integration tests: generated script runs against MySQL target with MSSQL/MySQL sources
+- ✓ `SourceBootstrapCompiler`: preamble for MySQL, MSSQL, PG, S3 CSV sources
+- ✓ Document supported connection patterns per source type
+- ✓ Integration tests: generated script runs against MySQL target with MSSQL/MySQL sources
 
 **Exit criteria:** Blueprint 1 and 2 from sample config produce runnable scripts.
 

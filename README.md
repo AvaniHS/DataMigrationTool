@@ -25,3 +25,5 @@ pytest
 ## Project layout
 
 See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for the full specification and implementation phases.
+
+Source bootstrap patterns: [docs/source-bootstrap-patterns.md](docs/source-bootstrap-patterns.md)

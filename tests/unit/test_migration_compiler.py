@@ -16,27 +16,35 @@ def _normalize_sql(sql: str) -> str:
 
 
 @pytest.fixture
-def blueprint_one():
+def migration():
     parser = BlueprintParser()
-    migration = parser.parse_file(SAMPLE_CONFIG)
+    return parser.parse_file(SAMPLE_CONFIG)
+
+
+@pytest.fixture
+def blueprint_one(migration):
     return migration.blueprints[0]
 
 
-def test_compile_blueprint_one_produces_with_insert_and_upsert(blueprint_one) -> None:
+def test_compile_blueprint_one_produces_bootstrap_with_clause_and_upsert(
+    migration, blueprint_one
+) -> None:
     compiler = MigrationCompiler(MySqlDialect())
-    sql = compiler.compile_blueprint(blueprint_one)
+    sql = compiler.compile_blueprint(blueprint_one, migration.connections)
 
-    assert sql.startswith("WITH")
+    assert "CREATE TEMPORARY TABLE _bootstrap_cm AS" in sql
+    assert "CREATE TEMPORARY TABLE _bootstrap_gam AS" in sql
+    assert sql.index("_bootstrap_cm") < sql.index("WITH")
+    assert "WITH" in sql
     assert "bp1_target_projection AS (" in sql
     assert "INSERT INTO core.customers (id, company_name, phone, country_iso)" in sql
-    assert "FROM bp1_target_projection" in sql
     assert "ON DUPLICATE KEY UPDATE" in sql
     assert sql.endswith(";")
 
 
-def test_compile_blueprint_insert_only_reads_projection_cte(blueprint_one) -> None:
+def test_compile_blueprint_insert_only_reads_projection_cte(migration, blueprint_one) -> None:
     compiler = MigrationCompiler(MySqlDialect())
-    sql = compiler.compile_blueprint(blueprint_one)
+    sql = compiler.compile_blueprint(blueprint_one, migration.connections)
     insert_part = sql.split("INSERT INTO", maxsplit=1)[1]
 
     assert "JOIN" not in insert_part
@@ -44,9 +52,21 @@ def test_compile_blueprint_insert_only_reads_projection_cte(blueprint_one) -> No
     assert "REGEXP_REPLACE" not in insert_part
 
 
-def test_compile_blueprint_matches_golden_fragment(blueprint_one) -> None:
+def test_compile_blueprint_two_is_runnable_structure(migration) -> None:
     compiler = MigrationCompiler(MySqlDialect())
-    sql = compiler.compile_blueprint(blueprint_one)
+    blueprint = migration.blueprints[1]
+    sql = compiler.compile_blueprint(blueprint, migration.connections)
+
+    assert "CREATE TEMPORARY TABLE _bootstrap_tih AS" in sql
+    assert "CREATE TEMPORARY TABLE _bootstrap_til AS" in sql
+    assert "CREATE TEMPORARY TABLE _bootstrap_st AS" in sql
+    assert "bp2_target_projection AS (" in sql
+    assert "INSERT INTO billing.billing_details" in sql
+
+
+def test_compile_blueprint_matches_golden_fragment(migration, blueprint_one) -> None:
+    compiler = MigrationCompiler(MySqlDialect())
+    sql = compiler.compile_blueprint(blueprint_one, migration.connections)
     golden_path = (
         Path(__file__).resolve().parents[1]
         / "golden"

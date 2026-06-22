@@ -1,5 +1,6 @@
 """SQL compilation modules."""
 
+from migration_engine.compilers.bootstrap.source_bootstrap_compiler import SourceBootstrapCompiler
 from migration_engine.compilers.cte_models import CtePipeline, CteStage
 from migration_engine.compilers.cte_naming import CteNaming
 from migration_engine.compilers.cte_pipeline_builder import CtePipelineBuilder
@@ -12,5 +13,6 @@ __all__ = [
     "CtePipelineBuilder",
     "CteStage",
     "MigrationCompiler",
+    "SourceBootstrapCompiler",
     "resolve_mapping_expression",
 ]

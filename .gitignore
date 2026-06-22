@@ -15,3 +15,4 @@ htmlcov/
 .coverage
 output/
 *.sql
+!tests/golden/**/*.sql
