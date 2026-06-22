@@ -775,10 +775,10 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 ### Phase 5 — Chunking + Transactions
 
-- [ ] `ChunkingProceduralBuilder`: WHILE loop + chunk variables
-- [ ] `TransactionBuilder`: SAVEPOINT per blueprint step, COMMIT per step
-- [ ] Multi-blueprint orchestration in `MigrationCompiler`
-- [ ] Golden-file test: full `sampleConfigfile.json` → expected SQL
+- ✓ `ChunkingProceduralBuilder`: WHILE loop + chunk variables
+- ✓ `TransactionBuilder`: SAVEPOINT per blueprint step, COMMIT per step
+- ✓ Multi-blueprint orchestration in `MigrationCompiler`
+- ✓ Golden-file test: full `sampleConfigfile.json` → expected SQL
 
 **Exit criteria:** Full sample config generates one `.sql` file; manual run loads data on MySQL target.
 
@@ -839,7 +839,7 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 - ✓ `validate` catches all invalid configs before generation
 - [ ] `generate` produces one runnable MySQL script from `sampleConfigfile.json`
-- [ ] Script includes source bootstrap, CTE pipeline, chunking loop (blueprint 2), savepoints per step
+- ✓ Script includes source bootstrap, CTE pipeline, chunking loop (blueprint 2), savepoints per step
 - ✓ All `on_conflict` strategies implemented and tested
 - ✓ Factories allow registering new dialect/output format without changing compiler core
 - ✓ Adapters/executor stubs present for Phase C

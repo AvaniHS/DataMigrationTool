@@ -25,6 +25,11 @@ def blueprint_one():
 
 
 @pytest.fixture
+def migration():
+    return BlueprintParser().parse_file(SAMPLE_CONFIG)
+
+
+@pytest.fixture
 def pipeline_builder() -> CtePipelineBuilder:
     return CtePipelineBuilder()
 
@@ -153,3 +158,23 @@ def test_render_with_clause_contains_all_stage_names(
     assert sql.startswith("WITH")
     assert "bp1_stg_cm AS (" in sql
     assert "bp1_target_projection AS (" in sql
+
+
+def test_chunk_filter_stage_inserted_for_chunked_blueprint(
+    pipeline_builder: CtePipelineBuilder,
+    dialect: MySqlDialect,
+    migration,
+) -> None:
+    blueprint = migration.blueprints[1]
+    pipeline = pipeline_builder.build(blueprint, dialect, use_chunk_filter=True)
+    stage_names = [stage.name for stage in pipeline.stages]
+
+    assert "bp2_chunk_filtered" in stage_names
+    chunk_stage = next(stage for stage in pipeline.stages if stage.name == "bp2_chunk_filtered")
+    assert "tih.id > @bp2_chunk_min" in chunk_stage.body
+    assert "FROM bp2_stg_tih AS tih" in chunk_stage.body
+
+    pre_filter_stage = next(
+        stage for stage in pipeline.stages if stage.name == "bp2_pre_filtered_tih"
+    )
+    assert "FROM bp2_chunk_filtered AS tih" in pre_filter_stage.body

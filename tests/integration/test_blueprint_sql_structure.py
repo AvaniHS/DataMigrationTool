@@ -29,7 +29,17 @@ def test_blueprint_generates_self_contained_script(migration, blueprint_index: i
     sql = compiler.compile_blueprint(blueprint, migration.connections)
 
     assert "CREATE TEMPORARY TABLE _bootstrap_" in sql
+    assert "START TRANSACTION;" in sql
     assert "WITH" in sql
     assert "INSERT INTO" in sql
     assert f"bp{blueprint.sequence_order}_target_projection" in sql
-    assert sql.strip().endswith(";")
+    assert "COMMIT;" in sql
+
+
+def test_full_migration_generates_three_transaction_blocks(migration) -> None:
+    compiler = MigrationCompiler(MySqlDialect())
+    sql = compiler.compile_migration(migration)
+
+    assert sql.count("START TRANSACTION;") == 3
+    assert sql.count("COMMIT;") == 3
+    assert "WHILE @bp2_chunk_min <= @bp2_chunk_max DO" in sql

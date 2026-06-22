@@ -14,13 +14,28 @@ from migration_engine.models.blueprint import Blueprint
 class CtePipelineBuilder:
     """Constructs deterministic CTE stages from a blueprint definition."""
 
-    def build(self, blueprint: Blueprint, dialect: BaseDialect) -> CtePipeline:
+    def build(
+        self,
+        blueprint: Blueprint,
+        dialect: BaseDialect,
+        *,
+        use_chunk_filter: bool = False,
+    ) -> CtePipeline:
         naming = CteNaming(blueprint.sequence_order)
         root_alias = blueprint.sources.root_table.alias
         stages: list[CteStage] = []
 
         stages.extend(self._build_source_stages(blueprint, naming))
-        stages.append(self._build_pre_filter_stage(blueprint, naming, root_alias))
+        if use_chunk_filter:
+            stages.append(self._build_chunk_filter_stage(blueprint, naming, root_alias))
+        stages.append(
+            self._build_pre_filter_stage(
+                blueprint,
+                naming,
+                root_alias,
+                use_chunk_filter=use_chunk_filter,
+            )
+        )
         stages.append(self._build_join_stage(blueprint, naming, root_alias))
         stages.append(self._build_derivation_stage(blueprint, naming, root_alias))
         projection_source = self._append_post_filter_stage(stages, blueprint, naming)
@@ -54,10 +69,38 @@ class CtePipelineBuilder:
 
         return stages
 
-    def _build_pre_filter_stage(
+    def _build_chunk_filter_stage(
         self, blueprint: Blueprint, naming: CteNaming, root_alias: str
     ) -> CteStage:
+        chunking = blueprint.chunking_strategy
+        if not chunking.chunk_by_column or chunking.chunk_size is None:
+            raise ValueError("Chunk filter stage requires chunk_by_column and chunk_size.")
+
+        prefix = naming.blueprint_prefix.rstrip("_")
+        chunk_min = f"@{prefix}_chunk_min"
+        chunk_size = f"@{prefix}_chunk_size"
+        chunk_column = chunking.chunk_by_column
         source_cte = naming.stg(root_alias)
+
+        body = (
+            f"SELECT *\n"
+            f"FROM {source_cte} AS {root_alias}\n"
+            f"WHERE {chunk_column} > {chunk_min} "
+            f"AND {chunk_column} <= {chunk_min} + {chunk_size}"
+        )
+        return CteStage(name=naming.chunk_filtered(), body=body)
+
+    def _build_pre_filter_stage(
+        self,
+        blueprint: Blueprint,
+        naming: CteNaming,
+        root_alias: str,
+        *,
+        use_chunk_filter: bool = False,
+    ) -> CteStage:
+        source_cte = (
+            naming.chunk_filtered() if use_chunk_filter else naming.stg(root_alias)
+        )
         if blueprint.pre_filters:
             predicates = " AND ".join(blueprint.pre_filters)
             body = (

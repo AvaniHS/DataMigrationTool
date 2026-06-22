@@ -1,3 +1,7 @@
+START TRANSACTION;
+
+SAVEPOINT bp_step_1;
+
 -- Pulling customer profiles directly from the client's live MySQL CRM Server
 -- Bootstrap MYSQL source 'cm' (client_crm_mysql.crm_db.customer_master)
 SET @cm_host = 'client-crm-ip';
@@ -62,8 +66,11 @@ WITH
         NULLIF(TRIM(CAST(COALESCE(gam.country_code, 'USA') AS CHAR)), '') AS country_iso
     FROM bp1_calculation_layer
   )
-
 INSERT INTO core.customers (id, company_name, phone, country_iso)
 SELECT id, company_name, phone, country_iso
 FROM bp1_target_projection
 ON DUPLICATE KEY UPDATE company_name = VALUES(company_name), phone = VALUES(phone), country_iso = VALUES(country_iso);
+
+RELEASE SAVEPOINT bp_step_1;
+
+COMMIT;

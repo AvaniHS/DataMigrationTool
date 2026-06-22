@@ -31,6 +31,12 @@ class CteNaming:
     def target_projection(self) -> str:
         return f"{self.blueprint_prefix}target_projection"
 
+    def chunk_filtered(self) -> str:
+        return f"{self.blueprint_prefix}chunk_filtered"
+
+    def chunk_savepoint(self) -> str:
+        return f"{self.savepoint_name()}_chunk"
+
     def bootstrap_table(self, alias: str) -> str:
         return f"_bootstrap_{alias}"
 
