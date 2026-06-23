@@ -53,4 +53,4 @@ export const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export const APP_TITLE = "Data Onboarding Toolkit";
+export const APP_TITLE = "Migration Toolkit";

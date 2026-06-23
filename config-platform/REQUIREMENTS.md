@@ -1,6 +1,6 @@
 # Config Platform — Requirements (v1 Draft)
 
-**Status:** §12 decisions complete except final layout pick after P0 prototype (OQ-5)  
+**Status:** §12 decisions complete  
 **Product:** `config-platform/` (UI + API)  
 **Based on:** Original UI toolkit ideas (refined and aligned with script-generator contract)  
 **Related:** [../docs/INTEGRATION.md](../docs/INTEGRATION.md) · [../docs/sampleConfigfile.json](../docs/sampleConfigfile.json) · [../script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md)
@@ -45,7 +45,7 @@ Config platform **authors** the contract. Other products **consume** it.
 | Download if invalid | **Blocked** until full validation passes (OQ-1) |
 | Draft storage | **User choice:** server-side and/or browser local (OQ-3) |
 | UI library | **MUI + MUI X Data Grid** (OQ-4, confirmed) — see [§12.1](#121-ui-library-oq-4) |
-| Blueprint step layout | **Prototype both** tabs + sidebar in P0; pick winner before P3 (OQ-5) |
+| Blueprint step layout | **Sidebar** (Layout B) — OQ-5 confirmed after P0 review |
 | Duplicate blueprint | **Full deep copy** (OQ-6) |
 | S3 introspection | **File listing required**; column header preview optional in v1 (OQ-7) |
 | Key Vault prep | **Optional `secret_ref`** on API model; export uses `connection_string` until vault (OQ-9) |
@@ -189,7 +189,7 @@ Persistent left navigation. v1 implements two modules; others are routed placeho
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│  Data Onboarding Toolkit                                               │
+│  Migration Toolkit                                                     │
 ├──────────────┬─────────────────────────────────────────────────────────┤
 │ 🌐 Connect   │  Workspace (Configs active in v1)                       │
 │   [v1]       │                                                         │
@@ -480,7 +480,7 @@ config-platform/
 
 | Phase | Scope | Exit criteria |
 |-------|--------|---------------|
-| **P0** | Shell + routes + placeholders; **prototype both** blueprint layouts (tabs + sidebar) | Nav works; layout A/B comparable in Storybook or dev toggle |
+| **P0** | Shell + routes + placeholders; blueprint step layout comparison | Nav works; **sidebar** chosen for config steps (OQ-5) |
 | **P1** | Connections + test + structured export strings | All connection types testable |
 | **P2** | M0 + M2 + introspection APIs | Migration CRUD + schema tree |
 | **P3** | Blueprint wizard B1–B4 | Edit full blueprint matching sample |
@@ -502,7 +502,7 @@ config-platform/
 | OQ-2 | When to validate expressions | **Adopt recommendation:** L1 on Next; L2 on blur + on Next for B1/B3/B4; L3 before download | Closed |
 | OQ-3 | Draft storage | **Both** — user chooses server and/or local | Closed |
 | OQ-4 | UI component library | **MUI + MUI X Data Grid** (stakeholder confirmed) — §12.1 | Closed |
-| OQ-5 | Blueprint step layout | **Prototype both** in P0; choose before P3 — §12.2 | In progress |
+| OQ-5 | Blueprint step layout | **Sidebar (Layout B)** — stakeholder confirmed — §12.2 | Closed |
 | OQ-6 | Duplicate blueprint | **Full deep copy** — §12.3 | Closed |
 | OQ-7 | S3 introspection | **List files required**; header preview optional — §12.3 | Closed |
 | OQ-8 | `IGNORE_AND_LOG` audit table | **Set structure from source/target context** — §12.4 | Closed |
@@ -625,15 +625,15 @@ Within one blueprint, steps B1–B4 can be laid out two ways. **P0 prototype sho
 
 **Recommendation:** **Layout B (sidebar)** for this product — architects revisit sources and mappings often; consistency with global left nav.
 
-#### Decision (OQ-5) — **Prototype both in P0**
+#### Decision (OQ-5) — **Sidebar (Layout B)** ✓ *Stakeholder confirmed*
 
-| Deliverable | Purpose |
-|-------------|---------|
-| Layout A (tabs) + Layout B (sidebar) | Same mock step content; switch via Storybook or dev flag |
-| User review | Pick one before **P3** (real wizard implementation) |
-| Fallback | If undecided, default to **sidebar** for P3 |
+P0 compared Layout A (horizontal tabs) and Layout B (vertical sidebar). **Final:** sidebar for blueprint steps B1–B5 — matches app left nav; easy jump between Sources ↔ Mappings.
 
-**Exit criterion for P0:** Stakeholder signs off on A or B (or hybrid: sidebar on desktop, tabs on narrow viewport — optional).
+| Outcome | Detail |
+|---------|--------|
+| **Chosen** | `BlueprintWizardLayoutSidebar` — vertical step list + content pane |
+| **Removed** | Tab layout prototype and dev toggle (not carried into P3) |
+| **P3** | Real step forms plug into same sidebar shell (`BlueprintWizard`) |
 
 ---
 
@@ -742,7 +742,7 @@ Later:
 12. **Dual draft storage** — server and local, user choice (OQ-3).  
 13. **`IGNORE_AND_LOG`** audit table structure derived from target/source (OQ-8).  
 14. **Auth deferred** to far future (OQ-10).  
-15. **MUI + MUI X** for UI (OQ-4); **prototype both** blueprint layouts in P0 (OQ-5).  
+15. **MUI + MUI X** for UI (OQ-4); **sidebar** blueprint step layout (OQ-5).  
 16. **Duplicate blueprint** = full deep copy (OQ-6).  
 17. **S3:** list files + optional header preview (OQ-7).  
 18. **`secret_ref`** reserved on API for Key Vault (OQ-9).  

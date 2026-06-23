@@ -40,8 +40,6 @@ export const BLUEPRINT_WIZARD_STEPS: BlueprintWizardStep[] = [
   },
 ];
 
-export type BlueprintLayoutMode = "tabs" | "sidebar";
-
 export type MockMigration = {
   migrationId: string;
   clientId: string;
