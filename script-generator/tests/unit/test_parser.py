@@ -8,7 +8,7 @@ import pytest
 from migration_engine.models.enums import ConflictStrategy, OutputFormat, SourceType
 from migration_engine.parsers.blueprint_parser import BlueprintParseError, BlueprintParser
 
-SAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "docs" / "sampleConfigfile.json"
+SAMPLE_CONFIG = Path(__file__).resolve().parents[3] / "docs" / "sampleConfigfile.json"
 
 
 def test_parse_sample_config_file() -> None:

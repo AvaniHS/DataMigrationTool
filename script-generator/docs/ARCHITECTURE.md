@@ -517,9 +517,10 @@ Current stubs:
 ### 13.1 Commands
 
 ```bash
-py -m migration_engine validate --config docs/sampleConfigfile.json
-py -m migration_engine validate --config docs/sampleConfigfile.json --report-file output/validation.json
-py -m migration_engine generate --config docs/sampleConfigfile.json --output output/migration.sql --dialect MYSQL
+cd script-generator
+py -m migration_engine validate --config ../docs/sampleConfigfile.json
+py -m migration_engine validate --config ../docs/sampleConfigfile.json --report-file output/validation.json
+py -m migration_engine generate --config ../docs/sampleConfigfile.json --output output/migration.sql --dialect MYSQL
 ```
 
 ### 13.2 Client operational checklist
@@ -630,7 +631,7 @@ All dependencies are open source.
 
 ## 18. Sample Migration Structure
 
-The reference config `docs/sampleConfigfile.json` exercises:
+The reference config `../../docs/sampleConfigfile.json` exercises:
 
 | Blueprint | Sources | Notable features |
 |-----------|---------|------------------|
@@ -656,10 +657,12 @@ Golden output: `tests/golden/expected/sample_migration.sql` (274 lines).
 | Document | Purpose |
 |----------|---------|
 | [REQUIREMENTS.md](REQUIREMENTS.md) | Full functional spec, phases, success criteria |
+| [INTEGRATION.md](../../docs/INTEGRATION.md) | Cross-product APIs and contracts |
 | [source-bootstrap-patterns.md](source-bootstrap-patterns.md) | Federated schema naming and ops prerequisites |
-| [executor-streaming-design.md](executor-streaming-design.md) | Phase C batch streaming and error ledger design |
+| [executor-streaming-design.md](executor-streaming-design.md) | Migrator streaming design notes |
 | [codeSanityInstructionsToAI.md](codeSanityInstructionsToAI.md) | Engineering principles for contributors |
-| [README.md](../README.md) | Quick start and CLI examples |
+| [README.md](../../README.md) | Platform overview |
+| [script-generator README.md](../README.md) | Generator quick start |
 
 ---
 

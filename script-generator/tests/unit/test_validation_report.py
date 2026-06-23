@@ -8,7 +8,7 @@ from migration_engine.validators.migration_config_validator import MigrationConf
 from migration_engine.validators.report_writer import write_validation_report
 from migration_engine.validators.validation_result import ValidationIssue, ValidationReport
 
-SAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "docs" / "sampleConfigfile.json"
+SAMPLE_CONFIG = Path(__file__).resolve().parents[3] / "docs" / "sampleConfigfile.json"
 
 
 def test_format_summary_for_valid_report() -> None:

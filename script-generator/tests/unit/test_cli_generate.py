@@ -6,7 +6,7 @@ from typer.testing import CliRunner
 
 from migration_engine.__main__ import app
 
-SAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "docs" / "sampleConfigfile.json"
+SAMPLE_CONFIG = Path(__file__).resolve().parents[3] / "docs" / "sampleConfigfile.json"
 
 
 def test_generate_command_writes_sql_file(tmp_path: Path) -> None:

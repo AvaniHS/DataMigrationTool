@@ -8,7 +8,7 @@ import pytest
 from migration_engine.parsers.blueprint_parser import BlueprintParser
 from migration_engine.validators.migration_config_validator import MigrationConfigValidator
 
-SAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "docs" / "sampleConfigfile.json"
+SAMPLE_CONFIG = Path(__file__).resolve().parents[3] / "docs" / "sampleConfigfile.json"
 
 
 @pytest.fixture

@@ -4,7 +4,8 @@
 **Status:** For review — implementation to follow step-by-step after approval  
 **First target dialect:** MySQL  
 **First deliverable:** SQL script generation only (Phase A), architected for full ELT execution (Phase C)  
-**Architecture:** See [ARCHITECTURE.md](ARCHITECTURE.md) for implementation-aligned system design, diagrams, and design patterns.
+**Architecture:** See [ARCHITECTURE.md](ARCHITECTURE.md) for implementation-aligned system design, diagrams, and design patterns.  
+**Platform integration:** See [../../docs/INTEGRATION.md](../../docs/INTEGRATION.md) for cross-product APIs and contracts.
 
 ---
 
@@ -613,77 +614,41 @@ class IConnectionAdapter(ABC):
 
 ## 6. Project Structure (Production Layout)
 
+> Platform layout: see [INTEGRATION.md](../../docs/INTEGRATION.md). This product lives under `script-generator/`.
+
 ```
 DataMigrationTool/
-├── pyproject.toml
-├── README.md
 ├── docs/
-│   └── REQUIREMENTS.md
-├── config/
-│   └── whitelists/
-│       ├── mysql_functions.yaml
-│       └── mysql_operators.yaml
-├── sampleConfigfile.json
-├── src/
-│   └── migration_engine/
-│       ├── __init__.py
-│       ├── __main__.py              ← CLI entry: parse → validate → generate
-│       ├── models/
-│       │   ├── blueprint.py
-│       │   ├── connection.py
-│       │   ├── mapping.py
-│       │   └── enums.py
-│       ├── parsers/
-│       │   └── blueprint_parser.py
-│       ├── validators/
-│       │   ├── schema_validator.py
-│       │   ├── expression_validator.py
-│       │   └── connectivity_validator.py
-│       ├── dialects/
-│       │   ├── base_dialect.py
-│       │   └── mysql_dialect.py
-│       ├── strategies/
-│       │   └── conflict/
-│       │       ├── base.py
-│       │       ├── fail_strategy.py
-│       │       ├── ignore_strategy.py
-│       │       ├── upsert_strategy.py
-│       │       ├── ignore_and_log_strategy.py
-│       │       └── ignore_unprocessed_strategy.py
-│       ├── compilers/
-│       │   ├── migration_compiler.py
-│       │   ├── cte_pipeline_builder.py
-│       │   ├── source_bootstrap_compiler.py
-│       │   ├── chunking_procedural_builder.py
-│       │   └── transaction_builder.py
-│       ├── generators/
-│       │   ├── base_script_generator.py
-│       │   └── sql_script_generator.py
-│       ├── factories/
-│       │   ├── script_generator_factory.py
-│       │   ├── dialect_factory.py
-│       │   └── conflict_strategy_factory.py
-│       ├── adapters/                # Phase C — stubs in v1
-│       │   └── base_adapter.py
-│       ├── executor/                # Phase C — stubs in v1
-│       │   └── base_executor.py
-│       └── logging/
-│           └── structured_logger.py
-├── tests/
-│   ├── unit/
-│   │   ├── test_parser.py
-│   │   ├── test_validators.py
-│   │   ├── test_mysql_dialect.py
-│   │   ├── test_cte_pipeline.py
-│   │   └── test_conflict_strategies.py
-│   ├── golden/
-│   │   ├── input/sampleConfigfile.json
-│   │   └── expected/sample_migration.sql
-│   └── integration/
-│       ├── conftest.py
-│       ├── test_script_runs_mysql.py
-│       └── test_script_runs_mssql_sources.py
-└── output/                          # generated scripts (gitignored)
+│   ├── INTEGRATION.md
+│   └── sampleConfigfile.json
+├── script-generator/
+│   ├── pyproject.toml
+│   ├── README.md
+│   ├── docs/
+│   │   ├── REQUIREMENTS.md
+│   │   └── ARCHITECTURE.md
+│   ├── config/
+│   │   └── whitelists/
+│   ├── src/
+│   │   └── migration_engine/
+│   │       ├── __main__.py              ← CLI entry: parse → validate → generate
+│   │       ├── models/
+│   │       ├── parsers/
+│   │       ├── validators/
+│   │       ├── dialects/
+│   │       ├── strategies/conflict/
+│   │       ├── compilers/
+│   │       ├── generators/
+│   │       ├── factories/
+│   │       ├── adapters/                # Phase C — stubs
+│   │       ├── executor/                # Phase C — stubs (migrator will own execution)
+│   │       └── logging/
+│   └── tests/
+│       ├── unit/
+│       ├── golden/expected/
+│       └── integration/
+├── config-platform/                     # Planned — UI + API
+└── migrator/                            # Planned — script execution
 ```
 
 ---

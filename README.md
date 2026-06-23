@@ -1,50 +1,80 @@
-# Migration Engine
+# Data Migration Platform
 
-Configuration-driven, multi-tenant ELT migration tool that turns JSON blueprints into runnable MySQL SQL scripts.
+Three independent applications for migration **authoring**, **script generation**, and **execution**.
 
-## Setup
+| Product | Folder | Input → Output | Status |
+|---------|--------|----------------|--------|
+| **Config platform** | `config-platform/` | UI input → config file | Planned |
+| **Script generator** | `script-generator/` | Config → SQL script | **Active** |
+| **Migrator** | `migrator/` | SQL script → target DB migration | Planned |
+
+```text
+config-platform  ──►  script-generator  ──►  migrator
+   (config file)         (SQL file)           (run)
+```
+
+**Integration:** [docs/INTEGRATION.md](docs/INTEGRATION.md) — HTTP APIs and shared config contract.
+
+---
+
+## Repository layout
+
+```text
+DataMigrationTool/
+├── README.md                 ← platform entry (this file)
+├── docs/
+│   ├── INTEGRATION.md        ← cross-product contracts
+│   └── sampleConfigfile.json ← shared config example
+├── script-generator/         ← Product 1 (implemented)
+│   ├── docs/                 ← generator architecture & requirements
+│   ├── src/migration_engine/
+│   └── tests/
+├── config-platform/
+│   ├── api/                  ← backend (placeholder)
+│   └── web/                  ← frontend (placeholder)
+└── migrator/                 ← executor (placeholder)
+```
+
+---
+
+## Quick start — script generator
 
 ```bash
+cd script-generator
 python -m venv .venv
 .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
-## Validate a config
-
 ```bash
-py -m migration_engine validate --config docs/sampleConfigfile.json
-py -m migration_engine validate --config docs/sampleConfigfile.json --dialect MYSQL
-py -m migration_engine validate --config docs/sampleConfigfile.json --report-file output/validation.json
-```
-
-## Generate SQL
-
-```bash
-py -m migration_engine generate --config docs/sampleConfigfile.json --output output/migration.sql
-py -m migration_engine generate --config docs/sampleConfigfile.json --output output/migration.sql --dialect MYSQL
-```
-
-The `generate` command validates the config first, then writes a self-contained script with:
-
-- Source bootstrap preambles for MySQL, MSSQL, PostgreSQL, and S3 CSV sources
-- CTE pipeline per blueprint
-- Chunking loop for large blueprints (when enabled)
-- Per-blueprint transaction and savepoint boundaries
-
-## Run tests
-
-```bash
+py -m migration_engine validate --config ../docs/sampleConfigfile.json
+py -m migration_engine generate --config ../docs/sampleConfigfile.json --output output/migration.sql
 pytest
 ```
 
-Phase C execution stubs (`adapters/`, `executor/`) are reserved for future Python-side
-streaming. See [docs/executor-streaming-design.md](docs/executor-streaming-design.md).
+Sample config: [docs/sampleConfigfile.json](docs/sampleConfigfile.json)
 
-## Project layout
+---
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system design, diagrams, and design patterns.
+## Documentation
 
-See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for the full specification and implementation phases.
+| Document | Scope |
+|----------|--------|
+| [docs/INTEGRATION.md](docs/INTEGRATION.md) | APIs and contracts between products |
+| [script-generator/README.md](script-generator/README.md) | Run generator, local commands |
+| [script-generator/docs/ARCHITECTURE.md](script-generator/docs/ARCHITECTURE.md) | Generator design and patterns |
+| [script-generator/docs/REQUIREMENTS.md](script-generator/docs/REQUIREMENTS.md) | Generator spec and phases |
 
-Source bootstrap patterns: [docs/source-bootstrap-patterns.md](docs/source-bootstrap-patterns.md)
+Config platform and migrator docs will be added under their folders when development starts.
+
+---
+
+## Implementation status
+
+| Step | Description | Status |
+|------|-------------|--------|
+| 1 | Three-product folder split | Done |
+| 2 | `docs/INTEGRATION.md` | Done |
+| 3 | Script generator HTTP API | Planned |
+| 4 | Config platform (api + web) | Planned |
+| 5 | Migrator | Planned |

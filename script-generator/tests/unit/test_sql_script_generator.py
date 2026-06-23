@@ -10,7 +10,7 @@ from migration_engine.generators.sql_script_generator import SqlScriptGenerator
 from migration_engine.models.enums import DialectType, OutputFormat
 from migration_engine.parsers.blueprint_parser import BlueprintParser
 
-SAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "docs" / "sampleConfigfile.json"
+SAMPLE_CONFIG = Path(__file__).resolve().parents[3] / "docs" / "sampleConfigfile.json"
 GOLDEN_MIGRATION = (
     Path(__file__).resolve().parents[1] / "golden" / "expected" / "sample_migration.sql"
 )

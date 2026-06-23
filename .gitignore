@@ -14,5 +14,6 @@ venv/
 htmlcov/
 .coverage
 output/
+script-generator/output/
 *.sql
-!tests/golden/**/*.sql
+!**/tests/golden/**/*.sql

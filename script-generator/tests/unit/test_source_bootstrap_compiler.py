@@ -7,7 +7,7 @@ import pytest
 from migration_engine.compilers.bootstrap.source_bootstrap_compiler import SourceBootstrapCompiler
 from migration_engine.parsers.blueprint_parser import BlueprintParser
 
-SAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "docs" / "sampleConfigfile.json"
+SAMPLE_CONFIG = Path(__file__).resolve().parents[3] / "docs" / "sampleConfigfile.json"
 
 
 @pytest.fixture

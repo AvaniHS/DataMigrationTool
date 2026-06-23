@@ -8,7 +8,7 @@ from migration_engine.compilers.migration_compiler import MigrationCompiler
 from migration_engine.dialects.mysql_dialect import MySqlDialect
 from migration_engine.parsers.blueprint_parser import BlueprintParser
 
-SAMPLE_CONFIG = Path(__file__).resolve().parents[2] / "docs" / "sampleConfigfile.json"
+SAMPLE_CONFIG = Path(__file__).resolve().parents[3] / "docs" / "sampleConfigfile.json"
 
 
 def _normalize_sql(sql: str) -> str:
