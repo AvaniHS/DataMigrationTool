@@ -15,5 +15,8 @@ htmlcov/
 .coverage
 output/
 script-generator/output/
+node_modules/
+config-platform/web/dist/
+config-platform/web/storybook-static/
 *.sql
 !**/tests/golden/**/*.sql
