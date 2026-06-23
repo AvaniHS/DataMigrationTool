@@ -13,6 +13,12 @@ dependencies = [
     "uvicorn[standard]>=0.32",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
+    "structlog>=24.0",
+    "sqlalchemy>=2.0",
+    "pymysql>=1.1",
+    "psycopg2-binary>=2.9",
+    "pyodbc>=5.0",
+    "boto3>=1.35",
 ]
 
 [project.optional-dependencies]

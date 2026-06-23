@@ -1,28 +1,32 @@
-import { useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { BlueprintWizardLayoutSidebar } from "./BlueprintWizardLayoutSidebar";
-import { BLUEPRINT_WIZARD_STEPS, SAMPLE_MOCK_MIGRATION, type MockMigration } from "./types";
+import { BLUEPRINT_WIZARD_STEPS } from "./types";
 import { WizardStepMock } from "./WizardStepMock";
+import { useWizardStepIndex } from "@/hooks/useWizardStepIndex";
+import type { MockMigration } from "@/mock/sampleData";
+import { SAMPLE_MOCK_MIGRATION } from "@/mock/sampleData";
 
 type BlueprintWizardProps = {
   migration?: MockMigration;
 };
 
 export function BlueprintWizard({ migration = SAMPLE_MOCK_MIGRATION }: BlueprintWizardProps) {
-  const [activeStepIndex, setActiveStepIndex] = useState(0);
-
   const steps = BLUEPRINT_WIZARD_STEPS;
+  const [activeStepIndex, setActiveStepIndex] = useWizardStepIndex(
+    migration.migrationId,
+    steps.length,
+  );
   const activeStep = steps[activeStepIndex];
   const isFirst = activeStepIndex === 0;
   const isLast = activeStepIndex === steps.length - 1;
 
   return (
     <Box>
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h6">
+      <Box sx={{ mb: 1.5 }}>
+        <Typography variant="subtitle1" fontWeight={600}>
           Blueprint {migration.blueprintSequence}: {migration.blueprintName}
         </Typography>
         <Typography variant="body2" color="text.secondary">
@@ -30,7 +34,7 @@ export function BlueprintWizard({ migration = SAMPLE_MOCK_MIGRATION }: Blueprint
         </Typography>
       </Box>
 
-      <Stack direction="row" spacing={2} sx={{ alignItems: "stretch" }}>
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: "stretch" }}>
         <BlueprintWizardLayoutSidebar
           steps={steps}
           activeStepIndex={activeStepIndex}
@@ -39,14 +43,15 @@ export function BlueprintWizard({ migration = SAMPLE_MOCK_MIGRATION }: Blueprint
 
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <WizardStepMock step={activeStep} />
-          <Stack direction="row" justifyContent="space-between" sx={{ mt: 2 }}>
-            <Button disabled={isFirst} onClick={() => setActiveStepIndex((i) => i - 1)}>
+          <Stack direction="row" justifyContent="space-between" sx={{ mt: 1.5 }}>
+            <Button size="small" disabled={isFirst} onClick={() => setActiveStepIndex(activeStepIndex - 1)}>
               Back
             </Button>
             <Button
+              size="small"
               variant="contained"
               disabled={isLast}
-              onClick={() => setActiveStepIndex((i) => i + 1)}
+              onClick={() => setActiveStepIndex(activeStepIndex + 1)}
             >
               Next
             </Button>

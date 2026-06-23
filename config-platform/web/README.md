@@ -4,6 +4,7 @@
 cd config-platform/web
 npm install
 npm run dev
+npm run test
 ```
 
 Storybook (blueprint layout comparison):

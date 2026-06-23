@@ -12,6 +12,7 @@ export const appTheme = createTheme({
   },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    body2: { fontSize: "0.8125rem" },
   },
   components: {
     MuiDrawer: {
@@ -20,6 +21,20 @@ export const appTheme = createTheme({
           borderRight: "1px solid",
           borderColor: "divider",
         },
+      },
+    },
+    MuiButton: {
+      defaultProps: { size: "small" },
+    },
+    MuiTextField: {
+      defaultProps: { size: "small", margin: "dense" },
+    },
+    MuiTable: {
+      defaultProps: { size: "small" },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: { py: 0.75 },
       },
     },
   },

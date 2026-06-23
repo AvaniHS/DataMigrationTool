@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
@@ -9,32 +8,14 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import { fetchHealth } from "@/api/health";
 import { APP_TITLE, NAV_ITEMS } from "@/config/navigation";
+import { useApiHealth } from "@/hooks/useApiHealth";
 
 const DRAWER_WIDTH = 260;
 
 export function AppLayout() {
   const location = useLocation();
-  const [apiStatus, setApiStatus] = useState<"checking" | "ok" | "offline">("checking");
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchHealth()
-      .then(() => {
-        if (!cancelled) {
-          setApiStatus("ok");
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setApiStatus("offline");
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const apiStatus = useApiHealth();
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
@@ -51,7 +32,7 @@ export function AppLayout() {
             {APP_TITLE}
           </Typography>
         </Toolbar>
-        <List component="nav" aria-label="Main navigation">
+        <List component="nav" aria-label="Main navigation" dense>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const selected =
@@ -64,9 +45,10 @@ export function AppLayout() {
                 component={NavLink}
                 to={item.path}
                 selected={selected}
+                dense
               >
                 <ListItemIcon>
-                  <Icon />
+                  <Icon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText primary={item.label} />
                 {item.status === "active" ? (
@@ -80,8 +62,8 @@ export function AppLayout() {
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3, minWidth: 0 }}>
-        <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-end" }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 2, minWidth: 0 }}>
+        <Box sx={{ mb: 1.5, display: "flex", justifyContent: "flex-end" }}>
           <Chip
             size="small"
             label={

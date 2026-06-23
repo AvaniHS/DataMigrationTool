@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import { BlueprintWizard } from "@/components/config_wizard/BlueprintWizard";
-import { SAMPLE_MOCK_MIGRATION } from "@/components/config_wizard/types";
+import { SAMPLE_MOCK_MIGRATION } from "@/mock/sampleData";
 import { PageHeader } from "@/components/shared/PageHeader";
 
 export function MigrationDetailView() {

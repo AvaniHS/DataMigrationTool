@@ -18,5 +18,6 @@ script-generator/output/
 node_modules/
 config-platform/web/dist/
 config-platform/web/storybook-static/
+config-platform/api/data/
 *.sql
 !**/tests/golden/**/*.sql

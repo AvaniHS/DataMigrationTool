@@ -39,19 +39,3 @@ export const BLUEPRINT_WIZARD_STEPS: BlueprintWizardStep[] = [
     description: "Blueprint summary and step-level checks (B5).",
   },
 ];
-
-export type MockMigration = {
-  migrationId: string;
-  clientId: string;
-  version: string;
-  blueprintName: string;
-  blueprintSequence: number;
-};
-
-export const SAMPLE_MOCK_MIGRATION: MockMigration = {
-  migrationId: "mig_multi_server_enterprise_2026",
-  clientId: "client_global_retail_corp",
-  version: "1.0.0",
-  blueprintName: "customers",
-  blueprintSequence: 1,
-};

@@ -7,3 +7,5 @@ python -m venv .venv
 pip install -e ".[dev]"
 uvicorn config_platform_api.main:app --reload --port 8000
 ```
+
+Connections API (P1): `GET/POST/PUT/DELETE /connections`, `POST /connections/test`, `GET /connections/export`
