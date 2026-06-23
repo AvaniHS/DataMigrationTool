@@ -62,6 +62,7 @@ Sample config: [docs/sampleConfigfile.json](docs/sampleConfigfile.json)
 |----------|--------|
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | APIs and contracts between products |
 | [script-generator/README.md](script-generator/README.md) | Run generator, local commands |
+| [config-platform/REQUIREMENTS.md](config-platform/REQUIREMENTS.md) | Config UI/API v1 draft |
 | [script-generator/docs/ARCHITECTURE.md](script-generator/docs/ARCHITECTURE.md) | Generator design and patterns |
 | [script-generator/docs/REQUIREMENTS.md](script-generator/docs/REQUIREMENTS.md) | Generator spec and phases |
 

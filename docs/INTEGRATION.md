@@ -118,7 +118,6 @@ No compiler or UI code changes required.
 | Document | Location |
 |----------|----------|
 | Platform overview | [../README.md](../README.md) |
+| Config platform requirements | [../config-platform/REQUIREMENTS.md](../config-platform/REQUIREMENTS.md) |
 | Script generator architecture | [../script-generator/docs/ARCHITECTURE.md](../script-generator/docs/ARCHITECTURE.md) |
 | Script generator requirements | [../script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md) |
-
-Config platform and migrator `docs/` folders will be added when those products are implemented.
