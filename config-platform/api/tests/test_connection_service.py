@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from fastapi import HTTPException
 
-from config_platform_api.models.connections import ConnectionSaveRequest, DatabaseConnectionFields
+from config_platform_api.models.connections import ConnectionSaveRequest
 from config_platform_api.services.connection_service import save_verified_connection
 from config_platform_api.services.verification_store import VerificationStore
 from config_platform_api.storage.connection_store import ConnectionStore
@@ -12,15 +12,16 @@ from config_platform_api.storage.connection_store import ConnectionStore
 def _save_request(ref: str = "demo_mysql", verification_token: str = "token") -> ConnectionSaveRequest:
     return ConnectionSaveRequest(
         ref=ref,
-        type="MYSQL",
-        database=DatabaseConnectionFields(
-            host="localhost",
-            port=3306,
-            database="crm_db",
-            username="read_user",
-            password="pass",
-            use_advanced_string=False,
-        ),
+        connector_id="mysql",
+        connector_payload={
+            "auth_method": "password",
+            "host": "localhost",
+            "port": 3306,
+            "database": "crm_db",
+            "username": "read_user",
+            "password": "pass",
+            "use_advanced_string": False,
+        },
         verification_token=verification_token,
     )
 

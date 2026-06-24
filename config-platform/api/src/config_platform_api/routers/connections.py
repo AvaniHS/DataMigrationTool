@@ -11,7 +11,6 @@ from config_platform_api.models.connections import (
     ConnectionTestRequest,
     ConnectionTestResponse,
 )
-from config_platform_api.services.connection_builder import ConnectionValidationError
 from config_platform_api.services.connection_fingerprint import fingerprint_for_test
 from config_platform_api.services.connection_service import save_verified_connection
 from config_platform_api.services.connection_tester import test_connection
@@ -28,7 +27,7 @@ def list_connections(store: ConnectionStore = Depends(get_connection_store)) -> 
 
 
 @router.get("/export")
-def export_connections(store: ConnectionStore = Depends(get_connection_store)) -> dict[str, dict[str, str]]:
+def export_connections(store: ConnectionStore = Depends(get_connection_store)) -> dict[str, dict[str, object]]:
     return store.export_all()
 
 
@@ -48,6 +47,8 @@ def test_connection_endpoint(
     request: ConnectionTestRequest,
     verification_store: VerificationStore = Depends(get_verification_store),
 ) -> ConnectionTestResponse:
+    from config_platform_api.services.connection_builder import ConnectionValidationError
+
     try:
         fingerprint = fingerprint_for_test(request)
     except ConnectionValidationError as exc:
@@ -55,11 +56,15 @@ def test_connection_endpoint(
 
     result = test_connection(request)
     if not result.success:
-        logger.warning("connection_test_failed", connection_type=request.type.value, message=result.message)
+        logger.warning(
+            "connection_test_failed",
+            connector_id=request.connector_id,
+            message=result.message,
+        )
         return ConnectionTestResponse(success=False, message=result.message)
 
     token = verification_store.issue(fingerprint)
-    logger.info("connection_test_succeeded", connection_type=request.type.value)
+    logger.info("connection_test_succeeded", connector_id=request.connector_id)
     return ConnectionTestResponse(success=True, message=result.message, verification_token=token)
 
 

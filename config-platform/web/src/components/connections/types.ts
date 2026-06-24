@@ -1,6 +1,21 @@
-export type ConnectionType = "MYSQL" | "MSSQL" | "POSTGRESQL" | "CSV_S3_BUCKET";
+export type ConnectorCategory = "database" | "file";
 
-export type DatabaseConnectionFields = {
+export type AuthMethodSchema = {
+  id: string;
+  label: string;
+  delivery_phase: string;
+};
+
+export type ConnectorCatalogItem = {
+  connector_id: string;
+  label: string;
+  description: string;
+  category: ConnectorCategory;
+  export_type: string;
+  auth_methods: AuthMethodSchema[];
+};
+
+export type SqlDatabaseFields = {
   host: string;
   port: number;
   database: string;
@@ -10,14 +25,16 @@ export type DatabaseConnectionFields = {
   connection_string: string | null;
 };
 
-export type S3ConnectionFields = {
+export type S3BucketFields = {
   s3_bucket_uri: string;
   aws_region: string;
 };
 
 export type ConnectionListItem = {
   ref: string;
-  type: ConnectionType;
+  connector_id: string;
+  export_type: string;
+  category: ConnectorCategory;
   summary: string;
   last_tested_at: string | null;
   updated_at: string;
@@ -25,19 +42,17 @@ export type ConnectionListItem = {
 
 export type ConnectionRecord = {
   ref: string;
-  type: ConnectionType;
+  connector_id: string;
+  connector_payload: Record<string, unknown>;
   secret_ref: string | null;
-  database: DatabaseConnectionFields | null;
-  s3: S3ConnectionFields | null;
   created_at: string;
   updated_at: string;
   last_tested_at: string | null;
 };
 
 export type ConnectionTestRequest = {
-  type: ConnectionType;
-  database?: DatabaseConnectionFields | null;
-  s3?: S3ConnectionFields | null;
+  connector_id: string;
+  connector_payload: Record<string, unknown>;
 };
 
 export type ConnectionTestResponse = {
@@ -52,21 +67,17 @@ export type ConnectionSaveRequest = ConnectionTestRequest & {
   verification_token: string;
 };
 
-export const CONNECTION_TYPE_OPTIONS: {
-  value: ConnectionType;
-  label: string;
-  defaultPort: number;
-}[] = [
-  { value: "MYSQL", label: "MySQL", defaultPort: 3306 },
-  { value: "POSTGRESQL", label: "PostgreSQL", defaultPort: 5432 },
-  { value: "MSSQL", label: "Microsoft SQL Server", defaultPort: 1433 },
-  { value: "CSV_S3_BUCKET", label: "CSV on S3", defaultPort: 0 },
-];
+export const DEFAULT_PORTS: Record<string, number> = {
+  mysql: 3306,
+  postgresql: 5432,
+  mssql_onprem: 1433,
+  azure_sql_database: 1433,
+};
 
-export function createEmptyDatabaseFields(port: number): DatabaseConnectionFields {
+export function createEmptySqlFields(connectorId: string): SqlDatabaseFields {
   return {
     host: "",
-    port,
+    port: DEFAULT_PORTS[connectorId] ?? 3306,
     database: "",
     username: "",
     password: "",
@@ -75,13 +86,9 @@ export function createEmptyDatabaseFields(port: number): DatabaseConnectionField
   };
 }
 
-export function createEmptyS3Fields(): S3ConnectionFields {
+export function createEmptyS3Fields(): S3BucketFields {
   return {
     s3_bucket_uri: "",
     aws_region: "us-east-1",
   };
-}
-
-export function defaultPortForType(type: ConnectionType): number {
-  return CONNECTION_TYPE_OPTIONS.find((option) => option.value === type)?.defaultPort ?? 3306;
 }

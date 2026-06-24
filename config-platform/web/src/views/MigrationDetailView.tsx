@@ -253,7 +253,7 @@ export function MigrationDetailView() {
             >
               {connections.map((connection) => (
                 <MenuItem key={connection.ref} value={connection.ref}>
-                  {connection.ref} ({connection.type})
+                  {connection.ref} ({connection.export_type})
                 </MenuItem>
               ))}
             </Select>
@@ -265,7 +265,7 @@ export function MigrationDetailView() {
           )}
           <SchemaTree
             connectionRef={introspectionConnectionRef}
-            isS3Connection={introspectionConnection?.type === "CSV_S3_BUCKET"}
+            isS3Connection={introspectionConnection?.export_type === "CSV_S3_BUCKET"}
           />
         </Paper>
 

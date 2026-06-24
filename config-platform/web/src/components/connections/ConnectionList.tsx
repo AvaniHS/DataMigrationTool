@@ -59,8 +59,7 @@ export function ConnectionList({
             No connections yet
           </Typography>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Add a MYSQL, MSSQL, POSTGRESQL, or CSV_S3_BUCKET connection. Test connectivity before
-            saving.
+            Add a database or file connector from the catalog. Test connectivity before saving.
           </Typography>
           <Button variant="contained" onClick={onAdd}>
             Add connection
@@ -74,7 +73,8 @@ export function ConnectionList({
             <TableHead>
               <TableRow>
                 <TableCell>Ref</TableCell>
-                <TableCell>Type</TableCell>
+                <TableCell>Connector</TableCell>
+                <TableCell>Export type</TableCell>
                 <TableCell>Target</TableCell>
                 <TableCell>Last tested</TableCell>
                 <TableCell align="right">Actions</TableCell>
@@ -84,7 +84,8 @@ export function ConnectionList({
               {connections.map((connection) => (
                 <TableRow key={connection.ref} hover>
                   <TableCell>{connection.ref}</TableCell>
-                  <TableCell>{connection.type}</TableCell>
+                  <TableCell>{connection.connector_id}</TableCell>
+                  <TableCell>{connection.export_type}</TableCell>
                   <TableCell>{connection.summary}</TableCell>
                   <TableCell>
                     {connection.last_tested_at

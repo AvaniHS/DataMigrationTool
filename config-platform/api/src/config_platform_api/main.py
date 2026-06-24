@@ -6,7 +6,8 @@ from config_platform_api.config import get_settings
 from config_platform_api.exceptions import ConnectionStoreError, MigrationStoreError
 from config_platform_api.logging_setup import configure_logging, get_logger
 from config_platform_api.middleware.request_logging import RequestLoggingMiddleware
-from config_platform_api.routers import connections, health, introspection, migrations
+from config_platform_api.routers import connections, connectors, health, introspection, migrations
+from config_platform_api.connectors.base import ConnectorValidationError
 from config_platform_api.services.connection_builder import ConnectionValidationError
 
 configure_logging()
@@ -23,6 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(health.router)
+app.include_router(connectors.router)
 app.include_router(connections.router)
 app.include_router(introspection.router)
 app.include_router(migrations.router)
@@ -58,6 +60,15 @@ async def connection_validation_error_handler(
     exc: ConnectionValidationError,
 ) -> JSONResponse:
     logger.warning("connection_validation_failed", detail=str(exc))
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+
+@app.exception_handler(ConnectorValidationError)
+async def connector_validation_error_handler(
+    _request: Request,
+    exc: ConnectorValidationError,
+) -> JSONResponse:
+    logger.warning("connector_validation_failed", detail=str(exc))
     return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 

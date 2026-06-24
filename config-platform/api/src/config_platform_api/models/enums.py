@@ -6,6 +6,7 @@ class ConnectionType(str, Enum):
     MSSQL = "MSSQL"
     POSTGRESQL = "POSTGRESQL"
     CSV_S3_BUCKET = "CSV_S3_BUCKET"
+    LOCAL_CSV = "LOCAL_CSV"
 
 
 class OnConflictStrategy(str, Enum):

@@ -1,13 +1,15 @@
-"""Persist connection registry for P1 (JSON file)."""
+"""Persist connection registry (JSON file)."""
 
 import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from config_platform_api.connectors.legacy import migrate_legacy_connection_record
+from config_platform_api.connectors.registry import connector_registry
 from config_platform_api.exceptions import ConnectionStoreError
 from config_platform_api.logging_setup import get_logger
 from config_platform_api.models.connections import ConnectionListItem, ConnectionRecord, ConnectionSaveRequest
-from config_platform_api.services.connection_builder import build_connection_summary, validate_payload_shape
+from config_platform_api.services.connection_builder import build_connection_summary, validate_connection_payload
 
 logger = get_logger(__name__)
 
@@ -29,16 +31,22 @@ class ConnectionStore:
 
     def list_items(self) -> list[ConnectionListItem]:
         records = self._read_all()
-        return [
-            ConnectionListItem(
-                ref=record.ref,
-                type=record.type,
-                summary=build_connection_summary(record),
-                last_tested_at=record.last_tested_at,
-                updated_at=record.updated_at,
+        items: list[ConnectionListItem] = []
+        for record in sorted(records.values(), key=lambda item: item.ref):
+            connector = connector_registry.get(record.connector_id)
+            metadata = connector.metadata()
+            items.append(
+                ConnectionListItem(
+                    ref=record.ref,
+                    connector_id=record.connector_id,
+                    export_type=metadata.export_type,
+                    category=metadata.category,
+                    summary=build_connection_summary(record),
+                    last_tested_at=record.last_tested_at,
+                    updated_at=record.updated_at,
+                ),
             )
-            for record in sorted(records.values(), key=lambda item: item.ref)
-        ]
+        return items
 
     def get(self, ref: str) -> ConnectionRecord:
         record = self._read_all().get(ref)
@@ -47,7 +55,7 @@ class ConnectionStore:
         return record
 
     def create(self, request: ConnectionSaveRequest, *, tested_at: datetime) -> ConnectionRecord:
-        validate_payload_shape(request)
+        validate_connection_payload(request)
         records = self._read_all()
         if request.ref in records:
             raise ConnectionAlreadyExistsError(f"Connection '{request.ref}' already exists.")
@@ -60,11 +68,11 @@ class ConnectionStore:
         )
         records[request.ref] = record
         self._write(records)
-        logger.info("connection_created", ref=request.ref, type=request.type.value)
+        logger.info("connection_created", ref=request.ref, connector_id=request.connector_id)
         return record
 
     def update(self, ref: str, request: ConnectionSaveRequest, *, tested_at: datetime) -> ConnectionRecord:
-        validate_payload_shape(request)
+        validate_connection_payload(request)
         if ref != request.ref:
             raise ValueError("Connection ref in path and body must match.")
         records = self._read_all()
@@ -73,17 +81,16 @@ class ConnectionStore:
             raise ConnectionNotFoundError(f"Connection '{ref}' was not found.")
         updated = existing.model_copy(
             update={
-                "type": request.type,
+                "connector_id": request.connector_id,
+                "connector_payload": request.connector_payload,
                 "secret_ref": request.secret_ref,
-                "database": request.database,
-                "s3": request.s3,
                 "updated_at": datetime.now(UTC),
                 "last_tested_at": tested_at,
             },
         )
         records[ref] = updated
         self._write(records)
-        logger.info("connection_updated", ref=request.ref, type=request.type.value)
+        logger.info("connection_updated", ref=request.ref, connector_id=request.connector_id)
         return updated
 
     def delete(self, ref: str) -> None:
@@ -94,7 +101,7 @@ class ConnectionStore:
         self._write(records)
         logger.info("connection_deleted", ref=ref)
 
-    def export_all(self) -> dict[str, dict[str, str]]:
+    def export_all(self) -> dict[str, dict[str, object]]:
         from config_platform_api.services.connection_builder import record_to_export_dict
 
         return {ref: record_to_export_dict(record) for ref, record in self._read_all().items()}
@@ -102,7 +109,11 @@ class ConnectionStore:
     def _read_all(self) -> dict[str, ConnectionRecord]:
         try:
             raw = json.loads(self._storage_path.read_text(encoding="utf-8"))
-            return {ref: ConnectionRecord.model_validate(payload) for ref, payload in raw.items()}
+            records: dict[str, ConnectionRecord] = {}
+            for ref, payload in raw.items():
+                migrated = migrate_legacy_connection_record(payload)
+                records[ref] = ConnectionRecord.model_validate(migrated)
+            return records
         except (OSError, json.JSONDecodeError, ValueError) as exc:
             logger.error(
                 "connection_store_read_failed",

@@ -1,10 +1,10 @@
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import type { S3ConnectionFields } from "@/components/connections/types";
+import type { S3BucketFields } from "@/components/connections/types";
 
 type S3ConnectionFieldsFormProps = {
-  value: S3ConnectionFields;
-  onChange: (nextValue: S3ConnectionFields) => void;
+  value: S3BucketFields;
+  onChange: (nextValue: S3BucketFields) => void;
 };
 
 export function S3ConnectionFieldsForm({ value, onChange }: S3ConnectionFieldsFormProps) {

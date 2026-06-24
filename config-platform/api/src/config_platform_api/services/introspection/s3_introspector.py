@@ -5,11 +5,11 @@ from urllib.parse import urlparse
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
-from config_platform_api.models.connections import S3ConnectionFields
+from config_platform_api.connectors.payloads import S3BucketConnectorPayload
 from config_platform_api.models.introspection import S3FileNode
 
 
-def list_s3_files(fields: S3ConnectionFields) -> list[S3FileNode]:
+def list_s3_files(fields: S3BucketConnectorPayload) -> list[S3FileNode]:
     parsed = urlparse(fields.s3_bucket_uri)
     bucket = parsed.netloc
     prefix = parsed.path.lstrip("/")

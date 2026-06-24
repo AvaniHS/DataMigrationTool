@@ -1,11 +1,16 @@
 """Orchestrate connection lookup and schema introspection."""
 
 from config_platform_api.config import Settings
+from config_platform_api.connectors.payloads import S3BucketConnectorPayload
 from config_platform_api.exceptions import IntrospectionError
 from config_platform_api.logging_setup import get_logger
 from config_platform_api.models.enums import ConnectionType
 from config_platform_api.models.introspection import ColumnNode, SchemaNode, S3FileNode, TableNode
-from config_platform_api.services.connection_engine import create_engine_for_record, dispose_engine
+from config_platform_api.services.connection_engine import (
+    create_engine_for_record,
+    dispose_engine,
+    export_type_for_record,
+)
 from config_platform_api.services.introspection import database_introspector, mock_catalog, s3_introspector
 from config_platform_api.storage.connection_store import ConnectionNotFoundError, ConnectionStore
 
@@ -21,13 +26,16 @@ def list_schemas(
         return mock_catalog.mock_list_schemas()
 
     record = _get_connection(connection_store, connection_ref)
-    if record.type == ConnectionType.CSV_S3_BUCKET:
+    export_type = export_type_for_record(record)
+    if export_type == ConnectionType.CSV_S3_BUCKET:
         raise IntrospectionError("S3 connections do not expose SQL schemas. Use /files instead.")
+    if export_type == ConnectionType.LOCAL_CSV:
+        raise IntrospectionError("Local CSV connections do not expose SQL schemas. Use /files instead.")
 
     engine = None
     try:
         engine = create_engine_for_record(record)
-        return database_introspector.list_schemas(engine, record.type)
+        return database_introspector.list_schemas(engine, export_type)
     except Exception as exc:
         logger.warning(
             "introspection_schemas_failed",
@@ -50,13 +58,14 @@ def list_tables(
         return mock_catalog.mock_list_tables(schema)
 
     record = _get_connection(connection_store, connection_ref)
-    if record.type == ConnectionType.CSV_S3_BUCKET:
+    export_type = export_type_for_record(record)
+    if export_type == ConnectionType.CSV_S3_BUCKET:
         raise IntrospectionError("S3 connections do not expose SQL tables.")
 
     engine = None
     try:
         engine = create_engine_for_record(record)
-        return database_introspector.list_tables(engine, record.type, schema)
+        return database_introspector.list_tables(engine, export_type, schema)
     except Exception as exc:
         logger.warning(
             "introspection_tables_failed",
@@ -81,13 +90,14 @@ def list_columns(
         return mock_catalog.mock_list_columns(schema, table)
 
     record = _get_connection(connection_store, connection_ref)
-    if record.type == ConnectionType.CSV_S3_BUCKET:
+    export_type = export_type_for_record(record)
+    if export_type == ConnectionType.CSV_S3_BUCKET:
         raise IntrospectionError("S3 connections do not expose SQL columns.")
 
     engine = None
     try:
         engine = create_engine_for_record(record)
-        return database_introspector.list_columns(engine, record.type, schema, table)
+        return database_introspector.list_columns(engine, export_type, schema, table)
     except Exception as exc:
         logger.warning(
             "introspection_columns_failed",
@@ -111,13 +121,13 @@ def list_files(
         return mock_catalog.mock_list_s3_files()
 
     record = _get_connection(connection_store, connection_ref)
-    if record.type != ConnectionType.CSV_S3_BUCKET:
-        raise IntrospectionError("File listing is only available for CSV_S3_BUCKET connections.")
-    if record.s3 is None:
-        raise IntrospectionError("S3 connection fields are missing.")
+    export_type = export_type_for_record(record)
+    if export_type != ConnectionType.CSV_S3_BUCKET:
+        raise IntrospectionError("File listing is only available for csv_s3_bucket connections.")
+    s3 = S3BucketConnectorPayload.model_validate(record.connector_payload)
 
     try:
-        return s3_introspector.list_s3_files(record.s3)
+        return s3_introspector.list_s3_files(s3)
     except Exception as exc:
         logger.warning(
             "introspection_files_failed",

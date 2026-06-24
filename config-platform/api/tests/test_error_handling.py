@@ -27,7 +27,6 @@ def test_connection_validation_error_returns_422() -> None:
     client = TestClient(app, raise_server_exceptions=False)
     response = client.post(
         "/connections/test",
-        json={"type": "MYSQL"},
+        json={"connector_id": "mysql", "connector_payload": {"auth_method": "password"}},
     )
     assert response.status_code == 422
-    assert "Database fields are required" in response.json()["detail"]

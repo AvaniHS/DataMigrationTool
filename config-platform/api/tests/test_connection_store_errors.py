@@ -27,8 +27,9 @@ def test_write_failure_raises_store_error(tmp_path: Path, monkeypatch: pytest.Mo
 
     payload = {
         "ref": "demo",
-        "type": "MYSQL",
-        "database": {
+        "connector_id": "mysql",
+        "connector_payload": {
+            "auth_method": "password",
             "host": "localhost",
             "port": 3306,
             "database": "db",

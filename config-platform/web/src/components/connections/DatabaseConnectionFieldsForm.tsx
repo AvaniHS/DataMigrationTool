@@ -2,15 +2,15 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
-import type { DatabaseConnectionFields } from "@/components/connections/types";
+import type { SqlDatabaseFields } from "@/components/connections/types";
 
 type DatabaseConnectionFieldsFormProps = {
-  value: DatabaseConnectionFields;
-  onChange: (nextValue: DatabaseConnectionFields) => void;
+  value: SqlDatabaseFields;
+  onChange: (nextValue: SqlDatabaseFields) => void;
 };
 
 export function DatabaseConnectionFieldsForm({ value, onChange }: DatabaseConnectionFieldsFormProps) {
-  const update = (patch: Partial<DatabaseConnectionFields>) => {
+  const update = (patch: Partial<SqlDatabaseFields>) => {
     onChange({ ...value, ...patch });
   };
 

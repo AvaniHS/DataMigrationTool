@@ -1,6 +1,6 @@
 # Config Platform — Requirements (v1)
 
-**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P2 done; P1.1+ and P3 next.  
+**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P2 and P1.1 done; P1.2+ and P3 next.  
 **Product:** `config-platform/` (UI + API)  
 **Based on:** Original UI toolkit ideas (refined and aligned with script-generator contract)  
 **Related:** [../docs/INTEGRATION.md](../docs/INTEGRATION.md) · [../docs/sampleConfigfile.json](../docs/sampleConfigfile.json) · [../script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md)
@@ -1040,14 +1040,14 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 ### Phase P1.1 — Connector registry + adapter interface
 
-- [ ] `connector_id` + `connector_payload` on saved connections (replace flat `type` + blocks)
-- [ ] `IConnectionConnector` + `ConnectorRegistry` factory (API)
-- [ ] Adapter methods — `metadata`, `validate`, `fingerprint`, `test_connect`, `build_export`, `create_engine`
-- [ ] `GET /connectors`, `GET /connectors/{id}/schema`
-- [ ] Six Phase 1 connectors registered — `local_csv`, `mssql_onprem`, `azure_sql_database`, `mysql`, `postgresql`, `csv_s3_bucket`
-- [ ] Connect UI — connector picker shell + `connectorRegistry.ts`
-- [ ] Migrate stored P1 connections on read (`mssql_onprem` + `sql_login` default)
-- [ ] Per-connector React form stubs under `connections/connectors/` (§10)
+- [x] `connector_id` + `connector_payload` on saved connections (replace flat `type` + blocks)
+- [x] `IConnectionConnector` + `ConnectorRegistry` factory (API)
+- [x] Adapter methods — `metadata`, `validate`, `fingerprint`, `test_connect`, `build_export`, `create_engine`
+- [x] `GET /connectors`, `GET /connectors/{id}/schema`
+- [x] Six Phase 1 connectors registered — `local_csv`, `mssql_onprem`, `azure_sql_database`, `mysql`, `postgresql`, `csv_s3_bucket`
+- [x] Connect UI — connector picker shell + `connectorRegistry.ts`
+- [x] Migrate stored P1 connections on read (`mssql_onprem` + `sql_login` default)
+- [x] Per-connector React form stubs under `connections/connectors/` (§10)
 
 **Exit criteria:** Factory returns adapters; flat fields removed; catalog endpoint drives Connect dialog.
 
@@ -1203,7 +1203,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - **P1.5 vs P3.5:** **P1.5** = `local_csv` connector (Connect UI, test, export). **P3.5** = blueprint **B1** SchemaTree + file pickers. Same feature; two exit checks.
 - **P3.5** can start after P3 B1 is in progress; migrator streaming (P9) can trail config export.
-- **Recommended next build:** **P1.1** (connector registry) — code still uses P1 flat fields.
+- **Recommended next build:** **P1.2** (must-have auth) — connector registry (P1.1) complete.
 
 ### 11.1 Phase summary (quick view)
 
@@ -1211,7 +1211,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 |-------|--------|-------|
 | **P0** | [x] Complete | Shell, nav, sidebar wizard mock |
 | **P1** | [x] Complete | Flat fields — refactor in P1.1 |
-| **P1.1–P1.6** | [ ] Not started | Connector registry + tiered auth |
+| **P1.1–P1.6** | [ ] In progress | P1.1 complete; tiered auth P1.2–P1.6 pending |
 | **P2** | [x] Complete | Migration CRUD, introspection, M0/M2; wizard edit = P3 |
 | **P3** | [ ] In progress | Shell + mocks only; B1–B4 forms pending |
 | **P3.5** | [ ] Not started | `LOCAL_CSV` wizard wiring (after P1.5) |

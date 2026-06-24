@@ -11,7 +11,6 @@ import {
 import type {
   ConnectionListItem,
   ConnectionSaveRequest,
-  ConnectionTestRequest,
 } from "@/components/connections/types";
 
 type UseConnectionsResult = {
@@ -22,7 +21,7 @@ type UseConnectionsResult = {
   remove: (ref: string) => Promise<void>;
   save: (body: ConnectionSaveRequest, existingRef?: string) => Promise<void>;
   loadRecord: (ref: string) => Promise<ConnectionSaveRequest>;
-  runTest: (body: ConnectionTestRequest) => Promise<{ message: string; verificationToken: string }>;
+  runTest: (body: ConnectionSaveRequest) => Promise<{ message: string; verificationToken: string }>;
 };
 
 export function useConnections(): UseConnectionsResult {
@@ -70,16 +69,18 @@ export function useConnections(): UseConnectionsResult {
     const record = await getConnection(ref);
     return {
       ref: record.ref,
-      type: record.type,
+      connector_id: record.connector_id,
+      connector_payload: record.connector_payload,
       secret_ref: record.secret_ref,
-      database: record.database,
-      s3: record.s3,
       verification_token: "",
     };
   }, []);
 
-  const runTest = useCallback(async (body: ConnectionTestRequest) => {
-    const response = await testConnection(body);
+  const runTest = useCallback(async (body: ConnectionSaveRequest) => {
+    const response = await testConnection({
+      connector_id: body.connector_id,
+      connector_payload: body.connector_payload,
+    });
     if (!response.success || !response.verification_token) {
       throw new Error(response.message || "Connection test failed.");
     }
