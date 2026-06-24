@@ -1,6 +1,6 @@
 # Config Platform — Requirements (v1)
 
-**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P2 and P1.1–P1.6 done; P3 next.  
+**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P3.5 done; P4 next.  
 **Product:** `config-platform/` (UI + API)  
 **Based on:** Original UI toolkit ideas (refined and aligned with script-generator contract)  
 **Related:** [../docs/INTEGRATION.md](../docs/INTEGRATION.md) · [../docs/sampleConfigfile.json](../docs/sampleConfigfile.json) · [../script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md)
@@ -1132,23 +1132,24 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - [x] Wizard shell — `BlueprintWizard.tsx` + sidebar + Back/Next
 - [x] Local step index draft (`useWizardStepIndex` / `useLocalDraft`)
-- [ ] `StepSourcesJoins.tsx` (B1) — root table, joins, SchemaTree integration
-- [ ] `StepTargetConflict.tsx` (B2) — target, PKs, all five `on_conflict` strategies
-- [ ] `StepMappings.tsx` (B3) — derivations drawer + MUI X mapping grid
-- [ ] `StepFiltersChunking.tsx` (B4) — pre/post filters, chunking toggle
-- [ ] B5 Review — read-only blueprint summary (replace `WizardStepMock`)
-- [ ] Bind wizard ↔ `MigrationRecord.blueprints[]` (load + save on step change)
-- [ ] `SqlCodeEditor` component
-- [ ] L1 validation on Next (§8); L2 debounced expression validate (P5 proxy can stub)
+- [x] `StepSourcesJoins.tsx` (B1) — root table, joins, SchemaTree integration
+- [x] `StepTargetConflict.tsx` (B2) — target, PKs, all five `on_conflict` strategies
+- [x] `StepMappings.tsx` (B3) — derivations drawer + MUI X mapping grid
+- [x] `StepFiltersChunking.tsx` (B4) — pre/post filters, chunking toggle
+- [x] B5 Review — read-only blueprint summary (`StepBlueprintReview.tsx`)
+- [x] Bind wizard ↔ `MigrationRecord.blueprints[]` (load + save on step change)
+- [x] `SqlCodeEditor` component
+- [x] L1 validation on Next (§8)
+- [ ] L2 debounced expression validate (P5 proxy can stub; `SqlCodeEditor` debounce hook ready)
 
 **Exit criteria:** Edit full single-blueprint JSON matching sample shape from wizard UI.
 
 ### Phase P3.5 — `LOCAL_CSV` wizard (pairs with P1.5)
 
-- [ ] B1 file pickers — `connection_ref` + `file_name` for file-backed sources
-- [ ] SchemaTree branch for `LOCAL_CSV` registered files + columns
-- [ ] Sample column introspection wired (required for mapping grid, §7.1.4)
-- [ ] Upload widget for `platform_staging` (depends on P1.5)
+- [x] B1 file pickers — `connection_ref` + `file_name` for file-backed sources (in `StepSourcesJoins`)
+- [x] SchemaTree branch for `LOCAL_CSV` registered files + columns (B1 schema browser)
+- [x] Sample column introspection wired (mapping grid DIRECT options in B3)
+- [ ] Upload widget for `platform_staging` (Connect UI only; wizard upload = future polish)
 
 **Exit criteria:** CSV extract root/join selectable in B1; columns appear in SchemaTree.
 
@@ -1216,7 +1217,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - **P1.5 vs P3.5:** **P1.5** = `local_csv` connector (Connect UI, test, export). **P3.5** = blueprint **B1** SchemaTree + file pickers. Same feature; two exit checks.
 - **P3.5** can start after P3 B1 is in progress; migrator streaming (P9) can trail config export.
-- **Recommended next build:** **P3** (blueprint wizard B1–B4) and **P3.5** (`LOCAL_CSV` wizard wiring).
+- **Recommended next build:** **P4** (full migration JSON export) and **P5** (validate proxy + download gate).
 
 ### 11.1 Phase summary (quick view)
 
@@ -1226,8 +1227,8 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 | **P1** | [x] Complete | Flat fields — refactor in P1.1 |
 | **P1.1–P1.6** | [x] Complete | Six connectors + tiered auth P1.2–P1.6; script-generator contract sync (§7.5) |
 | **P2** | [x] Complete | Migration CRUD, introspection (DB + S3 + local CSV columns), M0/M2; wizard edit = P3 |
-| **P3** | [ ] In progress | Shell + mocks only; B1–B4 forms pending |
-| **P3.5** | [ ] Not started | `LOCAL_CSV` wizard wiring (after P1.5) |
+| **P3** | [x] Complete | B1–B5 wizard forms + API persist; L2 expression validate deferred to P5 |
+| **P3.5** | [x] Complete | B1/B3 file source wiring; wizard upload widget optional polish |
 | **P4–P9** | [ ] Not started | Export, validate, DDL, migrator handoff |
 
 ### 11.2 v1 sign-off checklist
@@ -1236,11 +1237,11 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - [x] Six connectors with tiered auth per §7.2 (P1.1–P1.6)
 - [x] Multiple blueprints per migration (add / duplicate / reorder / delete)
-- [ ] Full blueprint wizard B1–B5 edits persisted to API
-- [x] `LOCAL_CSV` path + upload (P1.5); [ ] wizard file pickers (P3.5)
+- [x] Full blueprint wizard B1–B5 edits persisted to API
+- [x] `LOCAL_CSV` path + upload (P1.5); [x] wizard file pickers (P3.5 / B1)
 - [ ] Export JSON matches [sampleConfigfile.json](../docs/sampleConfigfile.json)
 - [ ] Validate-before-download enforced (OQ-1)
-- [ ] All five `on_conflict` strategies in B2 UI
+- [x] All five `on_conflict` strategies in B2 UI
 - [x] Introspection for DB + S3 + local CSV sample columns (Connect + `SchemaTree` preview; wizard pickers = P3.5)
 - [ ] Test connection required before save (all connectors)
 - [ ] pytest + vitest pass; API never logs secrets

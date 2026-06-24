@@ -16,7 +16,7 @@ import { BlueprintList } from "@/components/config_wizard/BlueprintList";
 import { BlueprintWizard } from "@/components/config_wizard/BlueprintWizard";
 import { MigrationHeaderForm } from "@/components/config_wizard/MigrationHeaderForm";
 import { useConnections } from "@/components/connections/useConnections";
-import { blueprintLabel, type MigrationRecord } from "@/components/migrations/types";
+import type { MigrationRecord } from "@/components/migrations/types";
 import { ErrorAlertWithRetry } from "@/components/shared/ErrorAlertWithRetry";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { SchemaTree } from "@/components/shared/SchemaTree";
@@ -272,14 +272,23 @@ export function MigrationDetailView() {
           />
         </Paper>
 
-        {selectedBlueprint && (
+        {selectedBlueprint && migrationId && (
           <Paper variant="outlined" sx={{ p: 1.5 }}>
             <BlueprintWizard
               migrationId={migration.migration_id}
               clientId={migration.client_id}
               version={migration.version}
-              blueprintSequence={selectedBlueprint.sequence_order}
-              blueprintName={blueprintLabel(selectedBlueprint)}
+              blueprint={selectedBlueprint}
+              connections={connections}
+              onSave={async (blueprint) => {
+                const nextBlueprints = migration.blueprints.map((item) =>
+                  item.sequence_order === blueprint.sequence_order ? blueprint : item,
+                );
+                await persistMigration({
+                  ...migration,
+                  blueprints: nextBlueprints,
+                });
+              }}
             />
           </Paper>
         )}

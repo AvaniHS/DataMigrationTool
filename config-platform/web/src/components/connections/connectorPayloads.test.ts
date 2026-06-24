@@ -61,6 +61,7 @@ describe("connectorPayloads", () => {
       "access_key",
       initialSqlFieldsForConnector("mysql"),
       {
+        ...createEmptyS3Fields(),
         s3_bucket_uri: "s3://bucket/prefix/",
         aws_region: "us-east-1",
         access_key_id: "AKIA",
