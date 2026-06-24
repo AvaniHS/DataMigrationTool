@@ -80,7 +80,8 @@ Base URL example: `http://localhost:8000`
 | Area | Purpose |
 |------|---------|
 | Blueprint CRUD | Save/load draft migrations per client |
-| Export | Download config JSON matching shared contract |
+| Migration export | `GET /migrations/{id}/export` — contract JSON (`?download=true` for attachment) |
+| Connections export | `GET /connections/export` — per-connection contract fragments |
 | Proxy | Forward validate/generate to script generator API |
 
 Frontend (`config-platform/web/`) talks **only** to config API — never directly to script generator or migrator.

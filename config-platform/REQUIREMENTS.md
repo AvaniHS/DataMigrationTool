@@ -1,6 +1,6 @@
 # Config Platform — Requirements (v1)
 
-**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P3.5 done; P4 next.  
+**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P4 done; P5 next.  
 **Product:** `config-platform/` (UI + API)  
 **Based on:** Original UI toolkit ideas (refined and aligned with script-generator contract)  
 **Related:** [../docs/INTEGRATION.md](../docs/INTEGRATION.md) · [../docs/sampleConfigfile.json](../docs/sampleConfigfile.json) · [../script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md)
@@ -1157,9 +1157,9 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - [x] Multi-blueprint storage + reorder (P2)
 - [x] Per-connection export map — `GET /connections/export`
-- [ ] `GET /migrations/{id}/export` — full migration JSON assembler
-- [ ] Merge M0 header + `connections` + all `blueprints[]` → [sampleConfigfile.json](../docs/sampleConfigfile.json) shape
-- [ ] Export preview / download UI (before P5 validate gate)
+- [x] `GET /migrations/{id}/export` — full migration JSON assembler
+- [x] Merge M0 header + `connections` + all `blueprints[]` → [sampleConfigfile.json](../docs/sampleConfigfile.json) shape
+- [x] Export preview / download UI (before P5 validate gate)
 
 **Exit criteria:** Downloadable JSON with multiple blueprints matches contract file structure.
 
@@ -1217,7 +1217,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - **P1.5 vs P3.5:** **P1.5** = `local_csv` connector (Connect UI, test, export). **P3.5** = blueprint **B1** SchemaTree + file pickers. Same feature; two exit checks.
 - **P3.5** can start after P3 B1 is in progress; migrator streaming (P9) can trail config export.
-- **Recommended next build:** **P4** (full migration JSON export) and **P5** (validate proxy + download gate).
+- **Recommended next build:** **P5** (validate proxy + download gate).
 
 ### 11.1 Phase summary (quick view)
 
@@ -1229,7 +1229,8 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 | **P2** | [x] Complete | Migration CRUD, introspection (DB + S3 + local CSV columns), M0/M2; wizard edit = P3 |
 | **P3** | [x] Complete | B1–B5 wizard forms + API persist; L2 expression validate deferred to P5 |
 | **P3.5** | [x] Complete | B1/B3 file source wiring; wizard upload widget optional polish |
-| **P4–P9** | [ ] Not started | Export, validate, DDL, migrator handoff |
+| **P4** | [x] Complete | `GET /migrations/{id}/export` + preview/download UI |
+| **P5–P9** | [ ] Not started | Validate, DDL, migrator handoff |
 
 ### 11.2 v1 sign-off checklist
 

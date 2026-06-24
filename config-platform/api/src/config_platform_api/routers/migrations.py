@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 
 from config_platform_api.dependencies import get_connection_store, get_migration_store, get_staging_store
 from config_platform_api.models.migrations import (
@@ -8,6 +9,7 @@ from config_platform_api.models.migrations import (
     ReorderBlueprintsRequest,
     UpdateMigrationRequest,
 )
+from config_platform_api.services.migration_export import MigrationExportError, assemble_migration_export
 from config_platform_api.services.staging_cleanup import (
     cleanup_staging_for_connection_refs,
     connection_refs_in_migration,
@@ -49,6 +51,32 @@ def get_migration(
         return store.get(migration_id)
     except MigrationNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.get("/{migration_id}/export", response_model=None)
+def export_migration(
+    migration_id: str,
+    download: bool = Query(default=False, description="Set true to return Content-Disposition attachment."),
+    migration_store: MigrationStore = Depends(get_migration_store),
+    connection_store: ConnectionStore = Depends(get_connection_store),
+) -> JSONResponse | dict[str, object]:
+    try:
+        migration = migration_store.get(migration_id)
+        payload = assemble_migration_export(migration, connection_store)
+    except MigrationNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except MigrationExportError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    if download:
+        return JSONResponse(
+            content=payload,
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f'attachment; filename="{migration_id}.json"',
+            },
+        )
+    return payload
 
 
 @router.put("/{migration_id}", response_model=MigrationRecord)
