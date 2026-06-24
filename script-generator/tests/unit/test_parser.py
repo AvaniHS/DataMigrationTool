@@ -22,6 +22,19 @@ def test_parse_sample_config_file() -> None:
     assert len(blueprint.blueprints) == 3
 
 
+def test_parse_sample_config_reads_p12_connection_fields() -> None:
+    parser = BlueprintParser()
+    blueprint = parser.parse_file(SAMPLE_CONFIG)
+
+    mysql = blueprint.connections["client_crm_mysql"]
+    assert mysql.auth_method == "password"
+    assert mysql.driver_options == {"ssl_enabled": False}
+
+    s3 = blueprint.connections["client_archival_s3"]
+    assert s3.auth_method == "access_key"
+    assert s3.access_key_id == "AKIAEXAMPLE"
+
+
 def test_parse_strips_json_schema_field() -> None:
     parser = BlueprintParser()
     payload = json.loads(SAMPLE_CONFIG.read_text(encoding="utf-8"))

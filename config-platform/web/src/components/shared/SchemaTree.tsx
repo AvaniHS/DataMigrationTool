@@ -12,6 +12,7 @@ import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import {
   listColumns,
+  listFileColumns,
   listS3Files,
   listSchemas,
   listTables,
@@ -30,7 +31,7 @@ import {
 
 type SchemaTreeProps = {
   connectionRef: string;
-  isS3Connection: boolean;
+  isFileConnection: boolean;
   onSelectTable?: (schema: string, table: string) => void;
   onSelectFile?: (fileName: string) => void;
 };
@@ -43,7 +44,7 @@ function columnKey(schema: string, table: string) {
 
 export function SchemaTree({
   connectionRef,
-  isS3Connection,
+  isFileConnection,
   onSelectTable,
   onSelectFile,
 }: SchemaTreeProps) {
@@ -53,6 +54,7 @@ export function SchemaTree({
   const [tablesBySchema, setTablesBySchema] = useState<Record<string, string[]>>({});
   const [columnsByTable, setColumnsByTable] = useState<Record<string, ColumnNode[]>>({});
   const [files, setFiles] = useState<S3FileNode[]>([]);
+  const [columnsByFile, setColumnsByFile] = useState<Record<string, ColumnNode[]>>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const toggleExpanded = (key: string) => {
@@ -95,19 +97,21 @@ export function SchemaTree({
     }
   }, [connectionRef, loadMockDatabaseTree]);
 
-  const loadS3Files = useCallback(async () => {
+  const loadFiles = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       setFiles(await listS3Files(connectionRef));
+      setColumnsByFile({});
+      setExpanded({});
     } catch (err) {
       if (isMockDataEnabled()) {
         logClientError("schema_tree_s3_mock_fallback", { connectionRef, error: String(err) });
         setFiles(MOCK_S3_FILES);
         return;
       }
-      setError("Unable to list S3 files. Check bucket URI, IAM permissions, and API access.");
-      logClientError("schema_tree_s3_load_failed", { connectionRef, error: String(err) });
+      setError("Unable to list files. Check bucket URI, IAM permissions, and API access.");
+      logClientError("schema_tree_files_load_failed", { connectionRef, error: String(err) });
     } finally {
       setLoading(false);
     }
@@ -117,12 +121,12 @@ export function SchemaTree({
     if (!connectionRef) {
       return;
     }
-    if (isS3Connection) {
-      void loadS3Files();
+    if (isFileConnection) {
+      void loadFiles();
       return;
     }
     void loadDatabaseTree();
-  }, [connectionRef, isS3Connection, loadDatabaseTree, loadS3Files]);
+  }, [connectionRef, isFileConnection, loadDatabaseTree, loadFiles]);
 
   const ensureTablesLoaded = async (schema: string) => {
     if (tablesBySchema[schema]) {
@@ -173,6 +177,23 @@ export function SchemaTree({
     }
   };
 
+  const ensureFileColumnsLoaded = async (fileName: string) => {
+    if (columnsByFile[fileName]) {
+      return;
+    }
+    try {
+      const columnNodes = await listFileColumns(connectionRef, fileName);
+      setColumnsByFile((current) => ({ ...current, [fileName]: columnNodes }));
+    } catch (err) {
+      setError("Unable to read columns from the selected file sample.");
+      logClientError("schema_tree_file_columns_failed", {
+        connectionRef,
+        fileName,
+        error: String(err),
+      });
+    }
+  };
+
   const handleSchemaClick = async (schema: string) => {
     toggleExpanded(`schema:${schema}`);
     await ensureTablesLoaded(schema);
@@ -182,6 +203,12 @@ export function SchemaTree({
     toggleExpanded(`table:${schema}.${table}`);
     await ensureColumnsLoaded(schema, table);
     onSelectTable?.(schema, table);
+  };
+
+  const handleFileClick = async (fileName: string) => {
+    toggleExpanded(`file:${fileName}`);
+    await ensureFileColumnsLoaded(fileName);
+    onSelectFile?.(fileName);
   };
 
   if (!connectionRef) {
@@ -210,27 +237,53 @@ export function SchemaTree({
         <Box sx={{ p: 1 }}>
           <ErrorAlertWithRetry
             message={error}
-            onRetry={() => (isS3Connection ? void loadS3Files() : void loadDatabaseTree())}
+            onRetry={() => (isFileConnection ? void loadFiles() : void loadDatabaseTree())}
           />
         </Box>
       )}
 
-      {!loading && !error && isS3Connection && (
+      {!loading && !error && isFileConnection && (
         <List dense disablePadding>
-          {files.map((file) => (
-            <ListItemButton key={file.key} onClick={() => onSelectFile?.(file.name)}>
-              <ListItemText primary={file.name} secondary={file.key} />
-            </ListItemButton>
-          ))}
+          {files.map((file) => {
+            const fileOpen = expanded[`file:${file.name}`];
+            const columns = columnsByFile[file.name] ?? [];
+            return (
+              <Box key={file.key}>
+                <ListItemButton onClick={() => void handleFileClick(file.name)} sx={{ py: 0.25 }}>
+                  <IconButton size="small" edge="start" tabIndex={-1}>
+                    {fileOpen ? <ExpandMoreIcon fontSize="small" /> : <ChevronRightIcon fontSize="small" />}
+                  </IconButton>
+                  <ListItemText primary={file.name} secondary={file.key} />
+                </ListItemButton>
+                <Collapse in={fileOpen} unmountOnExit>
+                  <List dense disablePadding sx={{ pl: 4 }}>
+                    {columns.map((column) => (
+                      <ListItemButton key={column.name} sx={{ py: 0 }}>
+                        <ListItemText
+                          primary={column.name}
+                          secondary={`${column.data_type}${column.is_nullable ? "" : " · NOT NULL"}`}
+                        />
+                      </ListItemButton>
+                    ))}
+                    {columns.length === 0 && (
+                      <Typography variant="body2" color="text.secondary" sx={{ pl: 2, py: 0.5 }}>
+                        Loading columns…
+                      </Typography>
+                    )}
+                  </List>
+                </Collapse>
+              </Box>
+            );
+          })}
           {files.length === 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ p: 1 }}>
-              No CSV files found under this prefix.
+              No CSV files found for this connection.
             </Typography>
           )}
         </List>
       )}
 
-      {!loading && !error && !isS3Connection && (
+      {!loading && !error && !isFileConnection && (
         <List dense disablePadding>
           {schemas.map((schema) => {
             const schemaOpen = expanded[`schema:${schema}`];

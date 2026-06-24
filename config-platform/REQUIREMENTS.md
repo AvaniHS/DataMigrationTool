@@ -1044,8 +1044,8 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 - [x] UI — connection list, dialog, DB form, S3 form (`ConnectionsView`, `ConnectionFormDialog`)
 - [x] API tests — connections, builder, service, store
 - [x] Optional `secret_ref` on API model (no UI field yet)
-- [ ] S3 access-key fields in form (boto3 default chain only today)
-- [ ] SSL / driver options in forms
+- [x] S3 access-key fields in form — delivered in P1.2 `csv_s3_bucket` connector (`S3BucketForm`)
+- [x] SSL / driver options in forms — delivered in P1.2–P1.4 per-connector auth forms
 
 **Exit criteria:** All four legacy connection types testable and exportable. **Refactor to connectors in P1.1.**
 
@@ -1072,7 +1072,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 - [x] Extended export — `auth_method`, `driver_options` (§7.2.10)
 - [x] Update [sampleConfigfile.json](../docs/sampleConfigfile.json) + [INTEGRATION.md](../docs/INTEGRATION.md)
 - [x] User-friendly connection error messages (driver/credential/network); full detail in API logs
-- [ ] **script-generator contract sync** — parse P1.2 connection fields (`auth_method`, `driver_options`, `entra`, `access_key_id`, `secret_ref`); see §7.2.10 cross-product table and [script-generator REQUIREMENTS](../script-generator/docs/REQUIREMENTS.md) §9
+- [x] **script-generator contract sync** — parse P1.2 connection fields (`auth_method`, `driver_options`, `entra`, `access_key_id`, `secret_ref`); see §7.2.10 and [script-generator REQUIREMENTS](../script-generator/docs/REQUIREMENTS.md) §7.5
 
 **Exit criteria:** Tier P1.2 auth methods testable from API host; export matches extended contract. Script-generator can **validate** P1.2-shaped configs (compile may still use legacy `connection_string` until bootstrap auth work lands).
 
@@ -1119,12 +1119,12 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 - [x] M2 UI — blueprint list with add / duplicate / delete / reorder
 - [x] Introspection API — schemas, tables, columns, files
 - [x] Introspection services — DB, S3, mock catalog
-- [x] `SchemaTree` component (lazy DB tree + S3 file list)
+- [x] `SchemaTree` component (lazy DB tree + S3/`LOCAL_CSV` file list + column preview)
 - [x] Mock introspection dev flag — `CONFIG_API_USE_MOCK_INTROSPECTION`
 - [x] API + web tests (migrations, factory, store)
 - [x] Migration delete button in UI — `ConfigBuilderView` delete action
-- [ ] `GET .../files/{name}/columns` — S3/local column sample preview
-- [ ] Wire `SchemaTree` selection into blueprint JSON (deferred to P3 B1)
+- [x] `GET .../files/{name}/columns` — S3 + `LOCAL_CSV` column sample preview (header parse)
+- [ ] Wire `SchemaTree` selection into blueprint JSON (deferred to P3 B1 / P3.5)
 
 **Exit criteria:** Migration CRUD + schema tree; blueprint list editable. Wizard body editing is P3.
 
@@ -1216,7 +1216,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - **P1.5 vs P3.5:** **P1.5** = `local_csv` connector (Connect UI, test, export). **P3.5** = blueprint **B1** SchemaTree + file pickers. Same feature; two exit checks.
 - **P3.5** can start after P3 B1 is in progress; migrator streaming (P9) can trail config export.
-- **Recommended next build:** **P1.4** (SSL/TLS + advanced S3 auth) or **P3** (blueprint wizard B1–B4).
+- **Recommended next build:** **P3** (blueprint wizard B1–B4) and **P3.5** (`LOCAL_CSV` wizard wiring).
 
 ### 11.1 Phase summary (quick view)
 
@@ -1224,8 +1224,8 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 |-------|--------|-------|
 | **P0** | [x] Complete | Shell, nav, sidebar wizard mock |
 | **P1** | [x] Complete | Flat fields — refactor in P1.1 |
-| **P1.1–P1.6** | [ ] In progress | P1.1–P1.3 complete; P1.4–P1.6 pending |
-| **P2** | [x] Complete | Migration CRUD, introspection, M0/M2; wizard edit = P3 |
+| **P1.1–P1.6** | [x] Complete | Six connectors + tiered auth P1.2–P1.6; script-generator contract sync (§7.5) |
+| **P2** | [x] Complete | Migration CRUD, introspection (DB + S3 + local CSV columns), M0/M2; wizard edit = P3 |
 | **P3** | [ ] In progress | Shell + mocks only; B1–B4 forms pending |
 | **P3.5** | [ ] Not started | `LOCAL_CSV` wizard wiring (after P1.5) |
 | **P4–P9** | [ ] Not started | Export, validate, DDL, migrator handoff |
@@ -1234,14 +1234,14 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 **Status legend:** `[x]` = complete · `[ ]` = not started / in progress
 
-- [ ] Six connectors with tiered auth per §7.2 (P1.1–P1.6)
+- [x] Six connectors with tiered auth per §7.2 (P1.1–P1.6)
 - [x] Multiple blueprints per migration (add / duplicate / reorder / delete)
 - [ ] Full blueprint wizard B1–B5 edits persisted to API
-- [ ] `LOCAL_CSV` path + upload + wizard file pickers (P1.5 + P3.5)
+- [x] `LOCAL_CSV` path + upload (P1.5); [ ] wizard file pickers (P3.5)
 - [ ] Export JSON matches [sampleConfigfile.json](../docs/sampleConfigfile.json)
 - [ ] Validate-before-download enforced (OQ-1)
 - [ ] All five `on_conflict` strategies in B2 UI
-- [ ] Introspection for DB + S3 + local CSV sample columns
+- [x] Introspection for DB + S3 + local CSV sample columns (Connect + `SchemaTree` preview; wizard pickers = P3.5)
 - [ ] Test connection required before save (all connectors)
 - [ ] pytest + vitest pass; API never logs secrets
 

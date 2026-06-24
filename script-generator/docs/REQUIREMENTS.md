@@ -784,10 +784,10 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 
 Triggered when [config-platform](../../config-platform/REQUIREMENTS.md) P1.2 extends [sampleConfigfile.json](../../docs/sampleConfigfile.json) with `auth_method`, `driver_options`, and related fields.
 
-- [ ] Extend `DatabaseConnection` / `CsvS3Connection` in `models/connection.py` — optional `auth_method`, `driver_options`, `entra`, `secret_ref`; S3 `access_key_id` (remove `extra="forbid"` breakage on new keys)
-- [ ] `BlueprintParser` + unit tests: [sampleConfigfile.json](../../docs/sampleConfigfile.json) validates and generates without parse errors
-- [ ] Document: compilation still uses `connection_string` / S3 URI for bootstrap until auth-aware preamble (Entra, Windows, explicit S3 keys) is a separate phase
-- [ ] Golden tests updated only if SQL output changes (not expected for parse-only sync)
+- [x] Extend `DatabaseConnection` / `CsvS3Connection` in `models/connection.py` — optional `auth_method`, `driver_options`, `entra`, `secret_ref`; S3 `access_key_id`, `secret_access_key`, `session_token`, `role_arn`, `external_id`
+- [x] `BlueprintParser` + unit tests: [sampleConfigfile.json](../../docs/sampleConfigfile.json) validates and generates without parse errors
+- [x] Document: compilation still uses `connection_string` / S3 URI for bootstrap until auth-aware preamble (Entra, Windows, explicit S3 keys) is a separate phase
+- [x] Golden tests updated only if SQL output changes (not expected for parse-only sync)
 
 **Exit criteria:** `validate` and `generate` succeed on P1.2-shaped sample config; no regression on configs that omit the new optional fields.
 

@@ -19,7 +19,7 @@ describe("SchemaTree", () => {
   });
 
   it("prompts when no connection is selected", () => {
-    render(<SchemaTree connectionRef="" isS3Connection={false} />);
+    render(<SchemaTree connectionRef="" isFileConnection={false} />);
     expect(screen.getByText(/Select a connection to browse schema metadata/i)).toBeInTheDocument();
   });
 
@@ -28,7 +28,7 @@ describe("SchemaTree", () => {
       { name: "data.csv", key: "prefix/data.csv" },
     ]);
 
-    render(<SchemaTree connectionRef="client_archival_s3" isS3Connection />);
+    render(<SchemaTree connectionRef="client_archival_s3" isFileConnection />);
 
     await waitFor(() => {
       expect(screen.getByText("data.csv")).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe("SchemaTree", () => {
   it("loads database schemas", async () => {
     vi.mocked(introspectionApi.listSchemas).mockResolvedValue([{ name: "crm_db" }]);
 
-    render(<SchemaTree connectionRef="client_crm_mysql" isS3Connection={false} />);
+    render(<SchemaTree connectionRef="client_crm_mysql" isFileConnection={false} />);
 
     await waitFor(() => {
       expect(screen.getByText("crm_db")).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe("SchemaTree", () => {
   it("shows a friendly error when schema load fails", async () => {
     vi.mocked(introspectionApi.listSchemas).mockRejectedValue(new Error("access denied"));
 
-    render(<SchemaTree connectionRef="client_crm_mysql" isS3Connection={false} />);
+    render(<SchemaTree connectionRef="client_crm_mysql" isFileConnection={false} />);
 
     await waitFor(() => {
       expect(screen.getByText(/Unable to read schema metadata/i)).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe("SchemaTree", () => {
     vi.mocked(mockProvider.isMockDataEnabled).mockReturnValue(true);
     vi.mocked(introspectionApi.listSchemas).mockRejectedValue(new Error("network"));
 
-    render(<SchemaTree connectionRef="client_crm_mysql" isS3Connection={false} />);
+    render(<SchemaTree connectionRef="client_crm_mysql" isFileConnection={false} />);
 
     await waitFor(() => {
       expect(screen.getByText("crm_db")).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe("SchemaTree", () => {
     render(
       <SchemaTree
         connectionRef="client_archival_s3"
-        isS3Connection
+        isFileConnection
         onSelectFile={onSelectFile}
       />,
     );

@@ -6,7 +6,13 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 from config_platform_api.connectors.payloads import S3BucketConnectorPayload
 from config_platform_api.connectors.s3_auth import create_s3_client
-from config_platform_api.models.introspection import S3FileNode
+from config_platform_api.models.introspection import ColumnNode, S3FileNode
+from config_platform_api.services.local_csv.csv_sample import (
+    DEFAULT_PARSE_OPTIONS,
+    read_csv_column_names_from_text,
+)
+
+SAMPLE_BYTES = 65_536
 
 
 def list_s3_files(fields: S3BucketConnectorPayload) -> list[S3FileNode]:
@@ -53,3 +59,29 @@ def list_s3_files(fields: S3BucketConnectorPayload) -> list[S3FileNode]:
         raise RuntimeError(str(exc)) from exc
 
     return sorted(files, key=lambda item: item.name.lower())
+
+
+def list_s3_file_columns(fields: S3BucketConnectorPayload, file_name: str) -> list[ColumnNode]:
+    parsed = urlparse(fields.s3_bucket_uri)
+    bucket = parsed.netloc
+    if not bucket:
+        raise ValueError("S3 bucket URI must include a bucket name.")
+
+    files = list_s3_files(fields)
+    match = next((item for item in files if item.name == file_name), None)
+    if match is None:
+        raise ValueError(f"File '{file_name}' was not found for this connection.")
+
+    client = create_s3_client(fields)
+    try:
+        response = client.get_object(
+            Bucket=bucket,
+            Key=match.key,
+            Range=f"bytes=0-{SAMPLE_BYTES - 1}",
+        )
+        raw = response["Body"].read()
+        sample = raw.decode("utf-8", errors="replace")
+        names = read_csv_column_names_from_text(sample, DEFAULT_PARSE_OPTIONS)
+        return [ColumnNode(name=name, data_type="string", is_nullable=True) for name in names]
+    except (BotoCoreError, ClientError) as exc:
+        raise RuntimeError(str(exc)) from exc

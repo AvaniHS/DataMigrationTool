@@ -156,8 +156,21 @@ def list_file_columns(
 
     record = _get_connection(connection_store, connection_ref)
     export_type = export_type_for_record(record)
+    if export_type == ConnectionType.CSV_S3_BUCKET:
+        s3 = S3BucketConnectorPayload.model_validate(record.connector_payload)
+        try:
+            return s3_introspector.list_s3_file_columns(s3, file_name)
+        except Exception as exc:
+            logger.warning(
+                "introspection_s3_file_columns_failed",
+                connection_ref=connection_ref,
+                file_name=file_name,
+                error=str(exc),
+                exc_info=True,
+            )
+            raise IntrospectionError(_sanitize_error(str(exc))) from exc
     if export_type != ConnectionType.LOCAL_CSV:
-        raise IntrospectionError("Column preview from files is only available for local_csv connections.")
+        raise IntrospectionError("Column preview from files is only available for file connections.")
 
     try:
         path = _resolve_local_csv_path(record, connection_ref, settings, staging_store)

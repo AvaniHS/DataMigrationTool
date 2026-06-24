@@ -265,7 +265,10 @@ export function MigrationDetailView() {
           )}
           <SchemaTree
             connectionRef={introspectionConnectionRef}
-            isS3Connection={introspectionConnection?.export_type === "CSV_S3_BUCKET"}
+            isFileConnection={
+              introspectionConnection?.export_type === "CSV_S3_BUCKET" ||
+              introspectionConnection?.export_type === "LOCAL_CSV"
+            }
           />
         </Paper>
 

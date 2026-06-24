@@ -33,3 +33,9 @@ export function listColumns(
 export function listS3Files(connectionRef: string): Promise<S3FileNode[]> {
   return apiFetch<S3FileNode[]>(`/connections/${encodeURIComponent(connectionRef)}/files`);
 }
+
+export function listFileColumns(connectionRef: string, fileName: string): Promise<ColumnNode[]> {
+  return apiFetch<ColumnNode[]>(
+    `/connections/${encodeURIComponent(connectionRef)}/files/${encodeURIComponent(fileName)}/columns`,
+  );
+}
