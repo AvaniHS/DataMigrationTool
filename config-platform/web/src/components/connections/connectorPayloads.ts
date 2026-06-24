@@ -45,38 +45,76 @@ export function buildConnectorPayload(
   }
 
   if (connectorId === "azure_sql_database") {
-    if (authMethod === "entra_service_principal") {
-      return {
-        auth_method: authMethod,
-        server: azureServer ?? sqlFields.host,
-        database: sqlFields.database,
-        tenant_id: azureEntra.tenant_id,
-        client_id: azureEntra.client_id,
-        client_secret: azureEntra.client_secret,
-        encrypt: true,
-        trust_server_certificate: false,
-        use_advanced_string: false,
-        connection_string: null,
-      };
-    }
-    return {
+    const base = {
       auth_method: authMethod,
       server: azureServer ?? sqlFields.host,
       database: sqlFields.database,
-      username: sqlFields.username,
-      password: sqlFields.password,
       encrypt: true,
       trust_server_certificate: false,
-      use_advanced_string: sqlFields.use_advanced_string,
-      connection_string: sqlFields.connection_string,
+      use_advanced_string: false,
+      connection_string: null,
     };
+    if (authMethod === "sql_login") {
+      return {
+        ...base,
+        username: sqlFields.username,
+        password: sqlFields.password,
+        use_advanced_string: sqlFields.use_advanced_string,
+        connection_string: sqlFields.connection_string,
+      };
+    }
+    if (authMethod === "entra_service_principal") {
+      return {
+        ...base,
+        tenant_id: azureEntra.tenant_id,
+        client_id: azureEntra.client_id,
+        client_secret: azureEntra.client_secret,
+      };
+    }
+    if (authMethod === "entra_password") {
+      return {
+        ...base,
+        tenant_id: azureEntra.tenant_id,
+        client_id: azureEntra.client_id,
+        entra_user: azureEntra.entra_user,
+        entra_password: azureEntra.entra_password,
+      };
+    }
+    if (authMethod === "entra_managed_identity") {
+      return {
+        ...base,
+        managed_identity_client_id: azureEntra.managed_identity_client_id,
+      };
+    }
+    return base;
   }
 
   if (connectorId === "postgresql") {
-    return {
+    const base = {
       auth_method: authMethod,
-      ...sqlFields,
-      sslmode: postgresSslMode,
+      host: sqlFields.host,
+      port: sqlFields.port,
+      database: sqlFields.database,
+      use_advanced_string: sqlFields.use_advanced_string,
+      connection_string: sqlFields.connection_string,
+    };
+    if (authMethod === "password") {
+      return {
+        ...base,
+        username: sqlFields.username,
+        password: sqlFields.password,
+        sslmode: postgresSslMode,
+      };
+    }
+    return {
+      ...base,
+      sslmode: "require",
+      tenant_id: azureEntra.tenant_id,
+      client_id: azureEntra.client_id,
+      client_secret: azureEntra.client_secret,
+      entra_user: azureEntra.entra_user,
+      entra_password: azureEntra.entra_password,
+      managed_identity_client_id: azureEntra.managed_identity_client_id,
     };
   }
 
@@ -97,10 +135,30 @@ export function buildConnectorPayload(
   }
 
   if (connectorId === "mysql") {
-    return {
+    const base = {
       auth_method: authMethod,
-      ...sqlFields,
-      ssl_enabled: mysqlSslEnabled,
+      host: sqlFields.host,
+      port: sqlFields.port,
+      database: sqlFields.database,
+      use_advanced_string: sqlFields.use_advanced_string,
+      connection_string: sqlFields.connection_string,
+    };
+    if (authMethod === "password") {
+      return {
+        ...base,
+        username: sqlFields.username,
+        password: sqlFields.password,
+        ssl_enabled: mysqlSslEnabled,
+      };
+    }
+    return {
+      ...base,
+      ssl_enabled: true,
+      tenant_id: azureEntra.tenant_id,
+      client_id: azureEntra.client_id,
+      client_secret: azureEntra.client_secret,
+      entra_user: azureEntra.entra_user,
+      managed_identity_client_id: azureEntra.managed_identity_client_id,
     };
   }
 
@@ -144,6 +202,9 @@ export function parseAzureEntraFromPayload(payload: Record<string, unknown>): Az
     tenant_id: String(payload.tenant_id ?? ""),
     client_id: String(payload.client_id ?? ""),
     client_secret: String(payload.client_secret ?? ""),
+    entra_user: String(payload.entra_user ?? ""),
+    entra_password: String(payload.entra_password ?? ""),
+    managed_identity_client_id: String(payload.managed_identity_client_id ?? ""),
   };
 }
 

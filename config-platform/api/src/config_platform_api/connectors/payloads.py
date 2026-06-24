@@ -4,6 +4,10 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+ENTRA_SERVICE_PRINCIPAL = "entra_service_principal"
+ENTRA_PASSWORD = "entra_password"
+ENTRA_MANAGED_IDENTITY = "entra_managed_identity"
+
 
 class _StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, populate_by_name=True)
@@ -24,28 +28,80 @@ def sql_fields_from_dict(data: dict[str, object]) -> SqlPasswordFields:
     return SqlPasswordFields.model_validate({key: value for key, value in data.items() if key in allowed})
 
 
+def _require_non_empty(value: str, field_name: str) -> None:
+    if not value:
+        raise ValueError(f"{field_name} is required for this auth method")
+
+
 class MysqlConnectorPayload(_StrictModel):
-    auth_method: Literal["password"] = "password"
+    auth_method: Literal["password", ENTRA_SERVICE_PRINCIPAL, ENTRA_MANAGED_IDENTITY] = "password"
     host: str = Field(min_length=1)
     port: int = Field(default=3306, ge=1, le=65535)
     database: str = Field(min_length=1)
-    username: str = Field(min_length=1)
+    username: str = ""
     password: str = ""
     ssl_enabled: bool = False
+    tenant_id: str = ""
+    client_id: str = ""
+    client_secret: str = ""
+    entra_user: str = ""
+    managed_identity_client_id: str = ""
     use_advanced_string: bool = False
     connection_string: str | None = None
+
+    @model_validator(mode="after")
+    def validate_auth_fields(self) -> Self:
+        if self.auth_method == "password":
+            _require_non_empty(self.username, "username")
+        if self.auth_method == ENTRA_SERVICE_PRINCIPAL:
+            _require_non_empty(self.tenant_id, "tenant_id")
+            _require_non_empty(self.client_id, "client_id")
+            _require_non_empty(self.client_secret, "client_secret")
+            _require_non_empty(self.entra_user, "entra_user")
+        if self.auth_method == ENTRA_MANAGED_IDENTITY:
+            _require_non_empty(self.entra_user, "entra_user")
+        return self
 
 
 class PostgresqlConnectorPayload(_StrictModel):
-    auth_method: Literal["password"] = "password"
+    auth_method: Literal[
+        "password",
+        ENTRA_PASSWORD,
+        ENTRA_SERVICE_PRINCIPAL,
+        ENTRA_MANAGED_IDENTITY,
+    ] = "password"
     host: str = Field(min_length=1)
     port: int = Field(default=5432, ge=1, le=65535)
     database: str = Field(min_length=1)
-    username: str = Field(min_length=1)
+    username: str = ""
     password: str = ""
     sslmode: Literal["disable", "allow", "prefer", "require", "verify-ca", "verify-full"] = "prefer"
+    tenant_id: str = ""
+    client_id: str = ""
+    client_secret: str = ""
+    entra_user: str = ""
+    entra_password: str = ""
+    managed_identity_client_id: str = ""
     use_advanced_string: bool = False
     connection_string: str | None = None
+
+    @model_validator(mode="after")
+    def validate_auth_fields(self) -> Self:
+        if self.auth_method == "password":
+            _require_non_empty(self.username, "username")
+        if self.auth_method == ENTRA_PASSWORD:
+            _require_non_empty(self.tenant_id, "tenant_id")
+            _require_non_empty(self.client_id, "client_id")
+            _require_non_empty(self.entra_user, "entra_user")
+            _require_non_empty(self.entra_password, "entra_password")
+        if self.auth_method == ENTRA_SERVICE_PRINCIPAL:
+            _require_non_empty(self.tenant_id, "tenant_id")
+            _require_non_empty(self.client_id, "client_id")
+            _require_non_empty(self.client_secret, "client_secret")
+            _require_non_empty(self.entra_user, "entra_user")
+        if self.auth_method == ENTRA_MANAGED_IDENTITY:
+            _require_non_empty(self.entra_user, "entra_user")
+        return self
 
 
 class MssqlOnPremPayload(_StrictModel):
@@ -78,9 +134,9 @@ class MssqlOnPremPayload(_StrictModel):
 class AzureSqlDatabasePayload(_StrictModel):
     auth_method: Literal[
         "sql_login",
-        "entra_service_principal",
-        "entra_password",
-        "entra_managed_identity",
+        ENTRA_SERVICE_PRINCIPAL,
+        ENTRA_PASSWORD,
+        ENTRA_MANAGED_IDENTITY,
     ] = "sql_login"
     server: str = Field(min_length=1)
     database: str = Field(min_length=1)
@@ -89,6 +145,9 @@ class AzureSqlDatabasePayload(_StrictModel):
     tenant_id: str = ""
     client_id: str = ""
     client_secret: str = ""
+    entra_user: str = ""
+    entra_password: str = ""
+    managed_identity_client_id: str = ""
     encrypt: bool = True
     trust_server_certificate: bool = False
     use_advanced_string: bool = False
@@ -96,18 +155,17 @@ class AzureSqlDatabasePayload(_StrictModel):
 
     @model_validator(mode="after")
     def validate_auth_fields(self) -> Self:
-        if self.auth_method in {"entra_password", "entra_managed_identity"}:
-            raise ValueError(f"{self.auth_method} is available in P1.3.")
         if self.auth_method == "sql_login":
-            if not self.username:
-                raise ValueError("username is required for sql_login")
-        if self.auth_method == "entra_service_principal":
-            if not self.tenant_id:
-                raise ValueError("tenant_id is required for entra_service_principal")
-            if not self.client_id:
-                raise ValueError("client_id is required for entra_service_principal")
-            if not self.client_secret:
-                raise ValueError("client_secret is required for entra_service_principal")
+            _require_non_empty(self.username, "username")
+        if self.auth_method == ENTRA_SERVICE_PRINCIPAL:
+            _require_non_empty(self.tenant_id, "tenant_id")
+            _require_non_empty(self.client_id, "client_id")
+            _require_non_empty(self.client_secret, "client_secret")
+        if self.auth_method == ENTRA_PASSWORD:
+            _require_non_empty(self.tenant_id, "tenant_id")
+            _require_non_empty(self.client_id, "client_id")
+            _require_non_empty(self.entra_user, "entra_user")
+            _require_non_empty(self.entra_password, "entra_password")
         return self
 
 

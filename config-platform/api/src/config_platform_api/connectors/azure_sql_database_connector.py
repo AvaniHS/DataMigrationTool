@@ -5,15 +5,24 @@ from typing import Any
 from pydantic import ValidationError
 from sqlalchemy.engine import Engine
 
-from config_platform_api.connectors.base import BaseConnector, ConnectorTestResult, ConnectorValidationError
-from config_platform_api.connectors.mssql_odbc import (
-    acquire_azure_sql_access_token,
-    build_mssql_odbc_connect,
-    create_mssql_engine,
+from config_platform_api.connectors.azure_entra import (
+    acquire_azure_sql_token_managed_identity,
+    acquire_azure_sql_token_password,
+    acquire_azure_sql_token_service_principal,
+    build_entra_export_block,
 )
-from config_platform_api.connectors.payloads import AzureSqlDatabasePayload, SqlPasswordFields
+from config_platform_api.connectors.base import BaseConnector, ConnectorTestResult, ConnectorValidationError
+from config_platform_api.connectors.mssql_odbc import build_mssql_odbc_connect, create_mssql_engine
+from config_platform_api.connectors.payloads import (
+    ENTRA_MANAGED_IDENTITY,
+    ENTRA_PASSWORD,
+    ENTRA_SERVICE_PRINCIPAL,
+    AzureSqlDatabasePayload,
+    SqlPasswordFields,
+)
 from config_platform_api.connectors.sql_helpers import (
     build_sql_connection_string,
+    create_mssql_engine_with_access_token,
     dispose_sql_engine,
     sanitize_connection_error,
     verify_sql_engine,
@@ -24,7 +33,9 @@ from config_platform_api.models.enums import ConnectionType
 
 logger = get_logger(__name__)
 
-P12_AUTH_METHODS = frozenset({"sql_login", "entra_service_principal"})
+SUPPORTED_AUTH_METHODS = frozenset(
+    {"sql_login", ENTRA_SERVICE_PRINCIPAL, ENTRA_PASSWORD, ENTRA_MANAGED_IDENTITY}
+)
 
 
 class AzureSqlDatabaseConnector(BaseConnector):
@@ -38,12 +49,20 @@ class AzureSqlDatabaseConnector(BaseConnector):
         return [
             AuthMethodSchema(id="sql_login", label="SQL authentication", delivery_phase="P1.2"),
             AuthMethodSchema(
-                id="entra_service_principal",
+                id=ENTRA_SERVICE_PRINCIPAL,
                 label="Microsoft Entra ID (service principal)",
                 delivery_phase="P1.2",
             ),
-            AuthMethodSchema(id="entra_password", label="Microsoft Entra ID (user/password)", delivery_phase="P1.3"),
-            AuthMethodSchema(id="entra_managed_identity", label="Managed identity", delivery_phase="P1.3"),
+            AuthMethodSchema(
+                id=ENTRA_PASSWORD,
+                label="Microsoft Entra ID (user/password)",
+                delivery_phase="P1.3",
+            ),
+            AuthMethodSchema(
+                id=ENTRA_MANAGED_IDENTITY,
+                label="Managed identity",
+                delivery_phase="P1.3",
+            ),
         ]
 
     def validate(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -57,11 +76,6 @@ class AzureSqlDatabaseConnector(BaseConnector):
 
     def test_connect(self, payload: dict[str, Any]) -> ConnectorTestResult:
         validated = self.validate(payload)
-        if validated["auth_method"] not in P12_AUTH_METHODS:
-            return ConnectorTestResult(
-                False,
-                f"Authentication '{validated['auth_method']}' is available in P1.3.",
-            )
         engine: Engine | None = None
         try:
             engine = self._create_engine_from_validated(validated, connect_timeout=5)
@@ -88,9 +102,7 @@ class AzureSqlDatabaseConnector(BaseConnector):
         exported: dict[str, Any] = {
             "type": self.export_type,
             "auth_method": validated["auth_method"],
-            "connection_string": (
-                f"sqlserver://{validated['server']}:1433/{validated['database']}"
-            ),
+            "connection_string": f"sqlserver://{validated['server']}:1433/{validated['database']}",
             "driver_options": {
                 "encrypt": validated["encrypt"],
                 "trust_server_certificate": validated["trust_server_certificate"],
@@ -107,21 +119,16 @@ class AzureSqlDatabaseConnector(BaseConnector):
                 connection_string=validated["connection_string"],
             )
             exported["connection_string"] = build_sql_connection_string(ConnectionType.MSSQL, fields)
-        if validated["auth_method"] == "entra_service_principal":
-            exported["entra"] = {
-                "tenant_id": validated["tenant_id"],
-                "client_id": validated["client_id"],
-            }
+        else:
+            entra = build_entra_export_block(validated)
+            if entra:
+                exported["entra"] = entra
         if secret_ref is not None:
             exported["secret_ref"] = secret_ref
         return exported
 
     def create_engine(self, payload: dict[str, Any]) -> Engine:
         validated = self.validate(payload)
-        if validated["auth_method"] not in P12_AUTH_METHODS:
-            raise ConnectorValidationError(
-                f"Introspection for '{validated['auth_method']}' is available in a later phase."
-            )
         return self._create_engine_from_validated(validated)
 
     def build_summary(self, payload: dict[str, Any]) -> str:
@@ -134,7 +141,11 @@ class AzureSqlDatabaseConnector(BaseConnector):
         *,
         connect_timeout: int = 10,
     ) -> Engine:
-        if validated["auth_method"] == "sql_login":
+        auth_method = validated["auth_method"]
+        encrypt = validated.get("encrypt", True)
+        trust = validated.get("trust_server_certificate", False)
+
+        if auth_method == "sql_login":
             odbc_connect = build_mssql_odbc_connect(
                 server=validated["server"],
                 port=1433,
@@ -142,28 +153,36 @@ class AzureSqlDatabaseConnector(BaseConnector):
                 auth_method="sql_login",
                 username=validated["username"],
                 password=validated["password"],
-                encrypt=validated.get("encrypt", True),
-                trust_server_certificate=validated.get("trust_server_certificate", False),
+                encrypt=encrypt,
+                trust_server_certificate=trust,
             )
             return create_mssql_engine(odbc_connect, connect_timeout=connect_timeout)
 
-        access_token = acquire_azure_sql_access_token(
-            validated["tenant_id"],
-            validated["client_id"],
-            validated["client_secret"],
-        )
-        odbc_connect = build_mssql_odbc_connect(
+        if auth_method == ENTRA_SERVICE_PRINCIPAL:
+            access_token = acquire_azure_sql_token_service_principal(
+                validated["tenant_id"],
+                validated["client_id"],
+                validated["client_secret"],
+            )
+        elif auth_method == ENTRA_PASSWORD:
+            access_token = acquire_azure_sql_token_password(
+                validated["tenant_id"],
+                validated["client_id"],
+                validated["entra_user"],
+                validated["entra_password"],
+            )
+        elif auth_method == ENTRA_MANAGED_IDENTITY:
+            access_token = acquire_azure_sql_token_managed_identity(
+                validated.get("managed_identity_client_id", ""),
+            )
+        else:
+            raise ConnectorValidationError(f"Unsupported auth method: {auth_method}")
+
+        return create_mssql_engine_with_access_token(
             server=validated["server"],
-            port=1433,
             database=validated["database"],
-            auth_method="sql_login",
-            username="",
-            password="",
-            encrypt=validated.get("encrypt", True),
-            trust_server_certificate=validated.get("trust_server_certificate", False),
-        )
-        return create_mssql_engine(
-            odbc_connect,
-            connect_timeout=connect_timeout,
             access_token=access_token,
+            encrypt=encrypt,
+            trust_server_certificate=trust,
+            connect_timeout=connect_timeout,
         )

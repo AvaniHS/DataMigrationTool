@@ -73,6 +73,69 @@ def create_postgresql_engine(
     return create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": connect_timeout})
 
 
+def create_mysql_engine_with_token(
+    *,
+    host: str,
+    port: int,
+    database: str,
+    entra_user: str,
+    access_token: str,
+    connect_timeout: int = 10,
+) -> Engine:
+    fields = SqlPasswordFields(
+        host=host,
+        port=port,
+        database=database,
+        username=entra_user,
+        password=access_token,
+    )
+    return create_mysql_engine(fields, ssl_enabled=True, connect_timeout=connect_timeout)
+
+
+def create_postgresql_engine_with_token(
+    *,
+    host: str,
+    port: int,
+    database: str,
+    entra_user: str,
+    access_token: str,
+    sslmode: str = "require",
+    connect_timeout: int = 10,
+) -> Engine:
+    fields = SqlPasswordFields(
+        host=host,
+        port=port,
+        database=database,
+        username=entra_user,
+        password=access_token,
+    )
+    return create_postgresql_engine(fields, sslmode=sslmode, connect_timeout=connect_timeout)
+
+
+def create_mssql_engine_with_access_token(
+    *,
+    server: str,
+    database: str,
+    access_token: str,
+    encrypt: bool = True,
+    trust_server_certificate: bool = False,
+    connect_timeout: int = 10,
+) -> Engine:
+    from config_platform_api.connectors.mssql_odbc import build_mssql_odbc_connect, create_mssql_engine
+
+    odbc_connect = build_mssql_odbc_connect(
+        server=server,
+        port=1433,
+        database=database,
+        auth_method="sql_login",
+        username="",
+        password="",
+        encrypt=encrypt,
+        trust_server_certificate=trust_server_certificate,
+    )
+    return create_mssql_engine(odbc_connect, connect_timeout=connect_timeout, access_token=access_token)
+
+
 def create_sql_engine(
     export_type: ConnectionType,
     fields: SqlPasswordFields,
@@ -111,6 +174,8 @@ def sanitize_connection_error(message: str) -> str:
         return "Connection timed out. Check host, port, and firewall rules."
     if "could not connect" in lowered or "connection refused" in lowered:
         return "Unable to reach the database server. Check host, port, and network access."
+    if "managed identity authentication failed" in lowered:
+        return cleaned
     if "ssl" in lowered and "certificate" in lowered:
         return "TLS handshake failed. Review SSL settings and server certificates."
     if "nosuchbucket" in lowered or "accessdenied" in lowered or "invalidaccesskeyid" in lowered:

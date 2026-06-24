@@ -102,16 +102,12 @@ def create_mssql_engine(
     return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
 
 
-def acquire_azure_sql_access_token(tenant_id: str, client_id: str, client_secret: str) -> str:
-    try:
-        from azure.identity import ClientSecretCredential
-    except ImportError as exc:
-        raise ConnectorValidationError(
-            "Azure identity library is not installed on the config API host."
-        ) from exc
+from config_platform_api.connectors.azure_entra import acquire_azure_sql_token_service_principal
 
-    credential = ClientSecretCredential(tenant_id, client_id, client_secret)
-    return credential.get_token("https://database.windows.net/.default").token
+
+def acquire_azure_sql_access_token(tenant_id: str, client_id: str, client_secret: str) -> str:
+    """Backward-compatible alias for service principal token acquisition."""
+    return acquire_azure_sql_token_service_principal(tenant_id, client_id, client_secret)
 
 
 def strip_sqlalchemy_error_suffix(message: str) -> str:

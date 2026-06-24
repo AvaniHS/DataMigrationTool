@@ -1,6 +1,7 @@
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
+import { EntraAuthFieldsForm } from "@/components/connections/EntraAuthFieldsForm";
 import type { ConnectorFormProps } from "@/components/connections/connectorRegistry";
 
 export function AzureSqlDatabaseForm({
@@ -14,10 +15,6 @@ export function AzureSqlDatabaseForm({
 }: ConnectorFormProps) {
   const updateSql = (patch: Partial<typeof sqlFields>) => {
     onSqlFieldsChange({ ...sqlFields, ...patch });
-  };
-
-  const updateEntra = (patch: Partial<typeof azureEntra>) => {
-    onAzureEntraChange({ ...azureEntra, ...patch });
   };
 
   return (
@@ -60,31 +57,13 @@ export function AzureSqlDatabaseForm({
         </>
       )}
 
-      {authMethod === "entra_service_principal" && (
-        <>
-          <TextField
-            size="small"
-            label="Tenant ID"
-            value={azureEntra.tenant_id}
-            onChange={(event) => updateEntra({ tenant_id: event.target.value })}
-            required
-          />
-          <TextField
-            size="small"
-            label="Client ID"
-            value={azureEntra.client_id}
-            onChange={(event) => updateEntra({ client_id: event.target.value })}
-            required
-          />
-          <TextField
-            size="small"
-            label="Client secret"
-            type="password"
-            value={azureEntra.client_secret}
-            onChange={(event) => updateEntra({ client_secret: event.target.value })}
-            required
-          />
-        </>
+      {authMethod.startsWith("entra_") && (
+        <EntraAuthFieldsForm
+          authMethod={authMethod}
+          value={azureEntra}
+          onChange={onAzureEntraChange}
+          showEntraUser={authMethod !== "entra_service_principal"}
+        />
       )}
     </Stack>
   );

@@ -3,6 +3,7 @@ import {
   buildConnectorPayload,
   defaultAuthMethod,
   initialSqlFieldsForConnector,
+  parseAzureEntraFromPayload,
   parseSqlFieldsFromPayload,
 } from "@/components/connections/connectorPayloads";
 import { isP12AuthMethod } from "@/components/connections/connectorRegistry";
@@ -70,6 +71,44 @@ describe("connectorPayloads", () => {
       auth_method: "access_key",
       access_key_id: "AKIA",
       secret_access_key: "secret",
+    });
+  });
+
+  it("builds postgresql entra password payload", () => {
+    const sqlFields = {
+      ...initialSqlFieldsForConnector("postgresql"),
+      host: "pg.postgres.database.azure.com",
+      database: "app",
+    };
+    const payload = buildConnectorPayload("postgresql", "entra_password", sqlFields, createEmptyS3Fields(), {
+      azureEntra: {
+        tenant_id: "tenant",
+        client_id: "client",
+        client_secret: "",
+        entra_user: "user@contoso.com",
+        entra_password: "pass",
+        managed_identity_client_id: "",
+      },
+    });
+    expect(payload).toMatchObject({
+      auth_method: "entra_password",
+      entra_user: "user@contoso.com",
+      sslmode: "require",
+    });
+  });
+
+  it("parses extended entra fields from payload", () => {
+    expect(
+      parseAzureEntraFromPayload({
+        tenant_id: "t",
+        client_id: "c",
+        entra_user: "u",
+        managed_identity_client_id: "mi",
+      }),
+    ).toMatchObject({
+      tenant_id: "t",
+      entra_user: "u",
+      managed_identity_client_id: "mi",
     });
   });
 

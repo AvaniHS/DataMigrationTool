@@ -1,6 +1,6 @@
 # Config Platform — Requirements (v1)
 
-**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P2 and P1.1–P1.2 done; P1.3+ and P3 next.  
+**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P2 and P1.1–P1.3 done; P1.4+ and P3 next.  
 **Product:** `config-platform/` (UI + API)  
 **Based on:** Original UI toolkit ideas (refined and aligned with script-generator contract)  
 **Related:** [../docs/INTEGRATION.md](../docs/INTEGRATION.md) · [../docs/sampleConfigfile.json](../docs/sampleConfigfile.json) · [../script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md)
@@ -1078,11 +1078,11 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 ### Phase P1.3 — Azure Entra (should-have)
 
-- [ ] `azure_sql_database` — `entra_managed_identity`, `entra_password`
-- [ ] `postgresql` / `mysql` — Entra SP, MI, `entra_password` (Azure-hosted)
-- [ ] Export stores Entra non-secrets; migrator acquires tokens at run (OQ-21)
+- [x] `azure_sql_database` — `entra_managed_identity`, `entra_password`
+- [x] `postgresql` / `mysql` — Entra SP, MI, `entra_password` (Azure-hosted)
+- [x] Export stores Entra non-secrets; migrator acquires tokens at run (OQ-21)
 
-**Exit criteria:** Entra MI + password paths test on Azure-hosted API.
+**Exit criteria:** Entra MI + password paths testable from API host (Azure credentials or configured local dev identity). Export `entra` block excludes secrets.
 
 ### Phase P1.4 — SSL/TLS + advanced S3 auth
 
@@ -1216,7 +1216,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - **P1.5 vs P3.5:** **P1.5** = `local_csv` connector (Connect UI, test, export). **P3.5** = blueprint **B1** SchemaTree + file pickers. Same feature; two exit checks.
 - **P3.5** can start after P3 B1 is in progress; migrator streaming (P9) can trail config export.
-- **Recommended next build:** **P1.3** (Azure Entra MI/password) or **P3** (blueprint wizard B1–B4).
+- **Recommended next build:** **P1.4** (SSL/TLS + advanced S3 auth) or **P3** (blueprint wizard B1–B4).
 
 ### 11.1 Phase summary (quick view)
 
@@ -1224,7 +1224,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 |-------|--------|-------|
 | **P0** | [x] Complete | Shell, nav, sidebar wizard mock |
 | **P1** | [x] Complete | Flat fields — refactor in P1.1 |
-| **P1.1–P1.6** | [ ] In progress | P1.1–P1.2 complete; P1.3–P1.6 pending |
+| **P1.1–P1.6** | [ ] In progress | P1.1–P1.3 complete; P1.4–P1.6 pending |
 | **P2** | [x] Complete | Migration CRUD, introspection, M0/M2; wizard edit = P3 |
 | **P3** | [ ] In progress | Shell + mocks only; B1–B4 forms pending |
 | **P3.5** | [ ] Not started | `LOCAL_CSV` wizard wiring (after P1.5) |

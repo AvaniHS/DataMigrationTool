@@ -36,6 +36,9 @@ export type AzureEntraFields = {
   tenant_id: string;
   client_id: string;
   client_secret: string;
+  entra_user: string;
+  entra_password: string;
+  managed_identity_client_id: string;
 };
 
 export type PostgresSslMode =
@@ -125,5 +128,8 @@ export function createEmptyAzureEntraFields(): AzureEntraFields {
     tenant_id: "",
     client_id: "",
     client_secret: "",
+    entra_user: "",
+    entra_password: "",
+    managed_identity_client_id: "",
   };
 }
