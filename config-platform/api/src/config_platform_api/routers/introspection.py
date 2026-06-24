@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from config_platform_api.config import Settings, get_settings
-from config_platform_api.dependencies import get_connection_store
+from config_platform_api.dependencies import get_connection_store, get_staging_store
 from config_platform_api.exceptions import IntrospectionError
 from config_platform_api.models.introspection import ColumnNode, SchemaNode, S3FileNode, TableNode
 from config_platform_api.services.introspection import introspection_service
 from config_platform_api.storage.connection_store import ConnectionStore
+from config_platform_api.storage.staging_store import StagingStore
 
 router = APIRouter(prefix="/connections", tags=["introspection"])
 
@@ -57,8 +58,23 @@ def list_connection_files(
     ref: str,
     store: ConnectionStore = Depends(get_connection_store),
     settings: Settings = Depends(get_settings),
+    staging_store: StagingStore = Depends(get_staging_store),
 ) -> list[S3FileNode]:
     try:
-        return introspection_service.list_files(store, ref, settings)
+        return introspection_service.list_files(store, ref, settings, staging_store)
+    except IntrospectionError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/{ref}/files/{file_name}/columns", response_model=list[ColumnNode])
+def list_connection_file_columns(
+    ref: str,
+    file_name: str,
+    store: ConnectionStore = Depends(get_connection_store),
+    settings: Settings = Depends(get_settings),
+    staging_store: StagingStore = Depends(get_staging_store),
+) -> list[ColumnNode]:
+    try:
+        return introspection_service.list_file_columns(store, ref, file_name, settings, staging_store)
     except IntrospectionError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from config_platform_api.dependencies import get_migration_store
+from config_platform_api.dependencies import get_connection_store, get_migration_store, get_staging_store
 from config_platform_api.models.migrations import (
     CreateMigrationRequest,
     MigrationListItem,
@@ -8,12 +8,18 @@ from config_platform_api.models.migrations import (
     ReorderBlueprintsRequest,
     UpdateMigrationRequest,
 )
+from config_platform_api.services.staging_cleanup import (
+    cleanup_staging_for_connection_refs,
+    connection_refs_in_migration,
+)
+from config_platform_api.storage.connection_store import ConnectionStore
 from config_platform_api.storage.migration_store import (
     BlueprintNotFoundError,
     MigrationAlreadyExistsError,
     MigrationNotFoundError,
     MigrationStore,
 )
+from config_platform_api.storage.staging_store import StagingStore
 
 router = APIRouter(prefix="/migrations", tags=["migrations"])
 
@@ -63,9 +69,14 @@ def update_migration(
 def delete_migration(
     migration_id: str,
     store: MigrationStore = Depends(get_migration_store),
+    connection_store: ConnectionStore = Depends(get_connection_store),
+    staging_store: StagingStore = Depends(get_staging_store),
 ) -> None:
     try:
+        migration = store.get(migration_id)
+        connection_refs = connection_refs_in_migration(migration)
         store.delete(migration_id)
+        cleanup_staging_for_connection_refs(connection_refs, connection_store, staging_store)
     except MigrationNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

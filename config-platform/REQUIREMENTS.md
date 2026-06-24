@@ -1095,11 +1095,11 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 ### Phase P1.5 — `local_csv` connector
 
-- [ ] `LOCAL_CSV` export type + connector adapter
-- [ ] `local_path` — path field, allowlist, header sample test
-- [ ] `platform_staging` — `POST /connections/{ref}/files/upload` (500 MB cap, OQ-12)
-- [ ] `LocalCsvForm.tsx` in Connect UI
-- [ ] Staging cleanup on migration delete + 30-day TTL job
+- [x] `LOCAL_CSV` export type + connector adapter
+- [x] `local_path` — path field, allowlist, header sample test
+- [x] `platform_staging` — `POST /connections/{ref}/files/upload` (500 MB cap, OQ-12)
+- [x] `LocalCsvForm.tsx` in Connect UI
+- [x] Staging cleanup on migration delete + 30-day TTL job
 
 **Exit criteria:** Register path or upload under Connect; export `LOCAL_CSV` metadata only.
 

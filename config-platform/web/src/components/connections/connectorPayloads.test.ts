@@ -97,6 +97,32 @@ describe("connectorPayloads", () => {
     });
   });
 
+  it("builds local_csv platform staging payload", () => {
+    const payload = buildConnectorPayload(
+      "local_csv",
+      "platform_staging",
+      initialSqlFieldsForConnector("mysql"),
+      createEmptyS3Fields(),
+      {
+        localCsv: {
+          file_path: "",
+          staging_file_id: "abc123",
+          parse_options: {
+            delimiter: ";",
+            quote: "'",
+            header_row: 2,
+            encoding: "utf-8",
+          },
+        },
+      },
+    );
+    expect(payload).toMatchObject({
+      location_kind: "platform_staging",
+      staging_file_id: "abc123",
+      parse_options: { delimiter: ";", header_row: 2 },
+    });
+  });
+
   it("parses extended entra fields from payload", () => {
     expect(
       parseAzureEntraFromPayload({

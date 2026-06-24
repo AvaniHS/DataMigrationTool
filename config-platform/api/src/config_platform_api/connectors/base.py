@@ -62,7 +62,7 @@ class BaseConnector(ABC):
         """Canonical payload for fingerprinting (secrets included for save verification)."""
 
     @abstractmethod
-    def test_connect(self, payload: dict[str, Any]) -> ConnectorTestResult:
+    def test_connect(self, payload: dict[str, Any], **_: Any) -> ConnectorTestResult:
         """Live connectivity probe from API host."""
 
     @abstractmethod

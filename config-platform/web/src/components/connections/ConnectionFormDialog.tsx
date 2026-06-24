@@ -16,9 +16,11 @@ import {
   buildConnectorPayload,
   defaultAuthMethod,
   initialAzureEntraFields,
+  initialLocalCsvFields,
   initialS3Fields,
   initialSqlFieldsForConnector,
   parseAzureEntraFromPayload,
+  parseLocalCsvFromPayload,
   parseMssqlDomainFromPayload,
   parseMysqlSslEnabled,
   parsePostgresSslMode,
@@ -35,6 +37,7 @@ import type {
   ConnectionSaveRequest,
   ConnectorCatalogItem,
   ConnectorCategory,
+  LocalCsvFields,
   PostgresSslMode,
   S3BucketFields,
   SqlDatabaseFields,
@@ -73,6 +76,7 @@ export function ConnectionFormDialog({
   const [mysqlSslEnabled, setMysqlSslEnabled] = useState(false);
   const [postgresSslMode, setPostgresSslMode] = useState<PostgresSslMode>("prefer");
   const [azureEntra, setAzureEntra] = useState<AzureEntraFields>(initialAzureEntraFields());
+  const [localCsvFields, setLocalCsvFields] = useState<LocalCsvFields>(initialLocalCsvFields());
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [testState, setTestState] = useState<TestState>("idle");
   const [testMessage, setTestMessage] = useState<string | null>(null);
@@ -100,9 +104,16 @@ export function ConnectionFormDialog({
       const payload = initialValues.connector_payload;
       setConnectionReference(initialValues.ref);
       setConnectorId(initialValues.connector_id);
-      setAuthMethod(String(payload.auth_method ?? defaultAuthMethod(findCatalogItem(catalog, initialValues.connector_id) ?? catalog[0])));
+      setAuthMethod(
+        String(
+          payload.location_kind ??
+            payload.auth_method ??
+            defaultAuthMethod(findCatalogItem(catalog, initialValues.connector_id) ?? catalog[0]),
+        ),
+      );
       setSqlFields(parseSqlFieldsFromPayload(payload));
       setS3Fields(parseS3FieldsFromPayload(payload));
+      setLocalCsvFields(parseLocalCsvFromPayload(payload));
       setAzureServer(String(payload.server ?? payload.host ?? ""));
       setMssqlDomain(parseMssqlDomainFromPayload(payload));
       setMysqlSslEnabled(parseMysqlSslEnabled(payload));
@@ -124,6 +135,7 @@ export function ConnectionFormDialog({
       setMysqlSslEnabled(false);
       setPostgresSslMode("prefer");
       setAzureEntra(initialAzureEntraFields());
+      setLocalCsvFields(initialLocalCsvFields());
     }
     setVerificationToken(null);
     setTestState("idle");
@@ -139,12 +151,14 @@ export function ConnectionFormDialog({
         mysqlSslEnabled,
         postgresSslMode,
         azureEntra,
+        localCsv: localCsvFields,
       }),
     [
       authMethod,
       azureEntra,
       azureServer,
       connectorId,
+      localCsvFields,
       mssqlDomain,
       mysqlSslEnabled,
       postgresSslMode,
@@ -184,6 +198,7 @@ export function ConnectionFormDialog({
     setMysqlSslEnabled(false);
     setPostgresSslMode("prefer");
     setAzureEntra(initialAzureEntraFields());
+    setLocalCsvFields(initialLocalCsvFields());
     invalidateTest();
   };
 
@@ -304,8 +319,10 @@ export function ConnectionFormDialog({
           {ConnectorForm && (
             <ConnectorForm
               authMethod={authMethod}
+              connectionReference={connectionReference}
               sqlFields={sqlFields}
               s3Fields={s3Fields}
+              localCsvFields={localCsvFields}
               azureServer={azureServer}
               mssqlDomain={mssqlDomain}
               mysqlSslEnabled={mysqlSslEnabled}
@@ -317,6 +334,10 @@ export function ConnectionFormDialog({
               }}
               onS3FieldsChange={(nextValue) => {
                 setS3Fields(nextValue);
+                invalidateTest();
+              }}
+              onLocalCsvFieldsChange={(nextValue) => {
+                setLocalCsvFields(nextValue);
                 invalidateTest();
               }}
               onAzureServerChange={(value) => {

@@ -46,7 +46,7 @@ def test_list_connectors_catalog(client: TestClient) -> None:
 def test_create_requires_successful_test(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "config_platform_api.routers.connections.test_connection",
-        lambda _request: type("Result", (), {"success": True, "message": "ok"})(),
+        lambda _request, **_: type("Result", (), {"success": True, "message": "ok"})(),
     )
 
     test_response = client.post(
@@ -73,7 +73,7 @@ def test_create_rejects_missing_verification_token(
 ) -> None:
     monkeypatch.setattr(
         "config_platform_api.routers.connections.test_connection",
-        lambda _request: type("Result", (), {"success": True, "message": "ok"})(),
+        lambda _request, **_: type("Result", (), {"success": True, "message": "ok"})(),
     )
     test_response = client.post(
         "/connections/test",
@@ -97,7 +97,7 @@ def test_create_rejects_missing_verification_token(
 def test_export_matches_contract(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "config_platform_api.routers.connections.test_connection",
-        lambda _request: type("Result", (), {"success": True, "message": "ok"})(),
+        lambda _request, **_: type("Result", (), {"success": True, "message": "ok"})(),
     )
     test_response = client.post(
         "/connections/test",

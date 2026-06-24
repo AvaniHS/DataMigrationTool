@@ -7,6 +7,7 @@ import { S3BucketForm } from "@/components/connections/connectors/S3BucketForm";
 import type {
   AzureEntraFields,
   ConnectorCatalogItem,
+  LocalCsvFields,
   PostgresSslMode,
   S3BucketFields,
   SqlDatabaseFields,
@@ -15,8 +16,10 @@ import type { ComponentType } from "react";
 
 export type ConnectorFormProps = {
   authMethod: string;
+  connectionReference: string;
   sqlFields: SqlDatabaseFields;
   s3Fields: S3BucketFields;
+  localCsvFields: LocalCsvFields;
   azureServer: string;
   mssqlDomain: string;
   mysqlSslEnabled: boolean;
@@ -24,6 +27,7 @@ export type ConnectorFormProps = {
   azureEntra: AzureEntraFields;
   onSqlFieldsChange: (nextValue: SqlDatabaseFields) => void;
   onS3FieldsChange: (nextValue: S3BucketFields) => void;
+  onLocalCsvFieldsChange: (nextValue: LocalCsvFields) => void;
   onAzureServerChange: (value: string) => void;
   onMssqlDomainChange: (value: string) => void;
   onMysqlSslEnabledChange: (value: boolean) => void;

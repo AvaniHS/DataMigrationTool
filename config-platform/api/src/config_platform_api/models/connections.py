@@ -31,6 +31,15 @@ class ConnectionRecord(ConnectionPayload):
 class ConnectionTestRequest(_StrictModel):
     connector_id: str = Field(min_length=1)
     connector_payload: dict[str, Any] = Field(default_factory=dict)
+    connection_ref: str | None = None
+
+    @field_validator("connection_ref")
+    @classmethod
+    def normalize_connection_ref(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        return normalized or None
 
 
 class ConnectionTestResponse(_StrictModel):
@@ -41,6 +50,10 @@ class ConnectionTestResponse(_StrictModel):
 
 class ConnectionSaveRequest(ConnectionPayload):
     verification_token: str = Field(min_length=1)
+
+
+class StagingUploadResponse(_StrictModel):
+    staging_file_id: str = Field(min_length=1)
 
 
 class ConnectionListItem(_StrictModel):

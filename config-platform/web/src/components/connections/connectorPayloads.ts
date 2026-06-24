@@ -1,9 +1,11 @@
 import type { ConnectorCatalogItem } from "@/components/connections/types";
 import {
   createEmptyAzureEntraFields,
+  createEmptyLocalCsvFields,
   createEmptyS3Fields,
   createEmptySqlFields,
   type AzureEntraFields,
+  type LocalCsvFields,
   type PostgresSslMode,
   type S3BucketFields,
   type SqlDatabaseFields,
@@ -24,6 +26,7 @@ export function buildConnectorPayload(
     mysqlSslEnabled?: boolean;
     postgresSslMode?: PostgresSslMode;
     azureEntra?: AzureEntraFields;
+    localCsv?: LocalCsvFields;
   } = {},
 ): Record<string, unknown> {
   const {
@@ -32,6 +35,7 @@ export function buildConnectorPayload(
     mysqlSslEnabled = false,
     postgresSslMode = "prefer",
     azureEntra = createEmptyAzureEntraFields(),
+    localCsv = createEmptyLocalCsvFields(),
   } = options;
 
   if (connectorId === "csv_s3_bucket") {
@@ -165,8 +169,9 @@ export function buildConnectorPayload(
   if (connectorId === "local_csv") {
     return {
       location_kind: authMethod === "platform_staging" ? "platform_staging" : "local_path",
-      file_path: "",
-      staging_file_id: "",
+      file_path: localCsv.file_path,
+      staging_file_id: localCsv.staging_file_id,
+      parse_options: localCsv.parse_options,
     };
   }
 
@@ -216,6 +221,20 @@ export function parseMysqlSslEnabled(payload: Record<string, unknown>): boolean 
   return Boolean(payload.ssl_enabled);
 }
 
+export function parseLocalCsvFromPayload(payload: Record<string, unknown>): LocalCsvFields {
+  const parseOptions = (payload.parse_options as Record<string, unknown> | undefined) ?? {};
+  return {
+    file_path: String(payload.file_path ?? ""),
+    staging_file_id: String(payload.staging_file_id ?? ""),
+    parse_options: {
+      delimiter: String(parseOptions.delimiter ?? ","),
+      quote: String(parseOptions.quote ?? '"'),
+      header_row: Number(parseOptions.header_row ?? 1),
+      encoding: String(parseOptions.encoding ?? "utf-8"),
+    },
+  };
+}
+
 export function parsePostgresSslMode(payload: Record<string, unknown>): PostgresSslMode {
   const value = String(payload.sslmode ?? "prefer");
   if (
@@ -241,4 +260,8 @@ export function initialS3Fields(): S3BucketFields {
 
 export function initialAzureEntraFields(): AzureEntraFields {
   return createEmptyAzureEntraFields();
+}
+
+export function initialLocalCsvFields(): LocalCsvFields {
+  return createEmptyLocalCsvFields();
 }

@@ -196,15 +196,30 @@ class S3BucketConnectorPayload(_StrictModel):
         return self
 
 
+class LocalCsvParseOptions(_StrictModel):
+    delimiter: str = ","
+    quote: str = '"'
+    header_row: int = Field(default=1, ge=1)
+    encoding: str = "utf-8"
+
+    @field_validator("delimiter", "quote")
+    @classmethod
+    def single_character(cls, value: str) -> str:
+        if len(value) != 1:
+            raise ValueError("delimiter and quote must be a single character")
+        return value
+
+
 class LocalCsvConnectorPayload(_StrictModel):
     location_kind: Literal["local_path", "platform_staging"] = "local_path"
     file_path: str = ""
     staging_file_id: str = ""
-    parse_options: dict[str, str | int] = Field(
-        default_factory=lambda: {
-            "delimiter": ",",
-            "quote": '"',
-            "header_row": 1,
-            "encoding": "utf-8",
-        },
-    )
+    parse_options: LocalCsvParseOptions = Field(default_factory=LocalCsvParseOptions)
+
+    @model_validator(mode="after")
+    def validate_location_fields(self) -> Self:
+        if self.location_kind == "local_path":
+            _require_non_empty(self.file_path, "file_path")
+        if self.location_kind == "platform_staging":
+            _require_non_empty(self.staging_file_id, "staging_file_id")
+        return self

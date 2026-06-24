@@ -5,6 +5,7 @@ import type {
   ConnectionSaveRequest,
   ConnectionTestRequest,
   ConnectionTestResponse,
+  StagingUploadResponse,
 } from "@/components/connections/types";
 
 export function listConnections(): Promise<ConnectionListItem[]> {
@@ -42,6 +43,15 @@ export function updateConnection(ref: string, body: ConnectionSaveRequest): Prom
 export function deleteConnection(ref: string): Promise<void> {
   return apiFetch<void>(`/connections/${encodeURIComponent(ref)}`, {
     method: "DELETE",
+  });
+}
+
+export function uploadConnectionFile(ref: string, file: File): Promise<StagingUploadResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiFetch<StagingUploadResponse>(`/connections/${encodeURIComponent(ref)}/files/upload`, {
+    method: "POST",
+    body: formData,
   });
 }
 

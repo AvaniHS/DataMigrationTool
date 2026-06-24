@@ -78,9 +78,27 @@ export type ConnectionRecord = {
   last_tested_at: string | null;
 };
 
+export type LocalCsvParseOptions = {
+  delimiter: string;
+  quote: string;
+  header_row: number;
+  encoding: string;
+};
+
+export type LocalCsvFields = {
+  file_path: string;
+  staging_file_id: string;
+  parse_options: LocalCsvParseOptions;
+};
+
 export type ConnectionTestRequest = {
   connector_id: string;
   connector_payload: Record<string, unknown>;
+  connection_ref?: string | null;
+};
+
+export type StagingUploadResponse = {
+  staging_file_id: string;
 };
 
 export type ConnectionTestResponse = {
@@ -131,5 +149,18 @@ export function createEmptyAzureEntraFields(): AzureEntraFields {
     entra_user: "",
     entra_password: "",
     managed_identity_client_id: "",
+  };
+}
+
+export function createEmptyLocalCsvFields(): LocalCsvFields {
+  return {
+    file_path: "",
+    staging_file_id: "",
+    parse_options: {
+      delimiter: ",",
+      quote: '"',
+      header_row: 1,
+      encoding: "utf-8",
+    },
   };
 }

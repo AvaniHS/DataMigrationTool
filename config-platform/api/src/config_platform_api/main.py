@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -10,11 +12,23 @@ from config_platform_api.routers import connections, connectors, health, introsp
 from config_platform_api.connectors.base import ConnectorValidationError
 from config_platform_api.services.connection_builder import ConnectionValidationError
 
+from config_platform_api.dependencies import get_staging_store
+
 configure_logging()
 logger = get_logger(__name__)
 settings = get_settings()
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    staging_store = get_staging_store()
+    removed = staging_store.purge_stale(ttl_days=settings.staging_ttl_days)
+    if removed:
+        logger.info("staging_startup_purge", removed=removed, ttl_days=settings.staging_ttl_days)
+    yield
+
+
+app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,

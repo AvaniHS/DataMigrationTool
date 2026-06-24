@@ -1,8 +1,7 @@
-from datetime import UTC, datetime
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
-from fastapi import APIRouter, Depends, HTTPException, status
-
-from config_platform_api.dependencies import get_connection_store, get_verification_store
+from config_platform_api.config import Settings, get_settings
+from config_platform_api.dependencies import get_connection_store, get_staging_store, get_verification_store
 from config_platform_api.logging_setup import get_logger
 from config_platform_api.models.connections import (
     ConnectionListItem,
@@ -10,12 +9,14 @@ from config_platform_api.models.connections import (
     ConnectionSaveRequest,
     ConnectionTestRequest,
     ConnectionTestResponse,
+    StagingUploadResponse,
 )
 from config_platform_api.services.connection_fingerprint import fingerprint_for_test
 from config_platform_api.services.connection_service import save_verified_connection
 from config_platform_api.services.connection_tester import test_connection
 from config_platform_api.services.verification_store import VerificationStore
 from config_platform_api.storage.connection_store import ConnectionNotFoundError, ConnectionStore
+from config_platform_api.storage.staging_store import StagingStore
 
 router = APIRouter(prefix="/connections", tags=["connections"])
 logger = get_logger(__name__)
@@ -46,6 +47,8 @@ def get_connection(
 def test_connection_endpoint(
     request: ConnectionTestRequest,
     verification_store: VerificationStore = Depends(get_verification_store),
+    settings: Settings = Depends(get_settings),
+    staging_store: StagingStore = Depends(get_staging_store),
 ) -> ConnectionTestResponse:
     from config_platform_api.services.connection_builder import ConnectionValidationError
 
@@ -54,7 +57,7 @@ def test_connection_endpoint(
     except ConnectionValidationError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
-    result = test_connection(request)
+    result = test_connection(request, settings=settings, staging_store=staging_store)
     if not result.success:
         logger.warning(
             "connection_test_failed",
@@ -66,6 +69,35 @@ def test_connection_endpoint(
     token = verification_store.issue(fingerprint)
     logger.info("connection_test_succeeded", connector_id=request.connector_id)
     return ConnectionTestResponse(success=True, message=result.message, verification_token=token)
+
+
+@router.post("/{ref}/files/upload", response_model=StagingUploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_connection_file(
+    ref: str,
+    file: UploadFile = File(...),
+    settings: Settings = Depends(get_settings),
+    staging_store: StagingStore = Depends(get_staging_store),
+) -> StagingUploadResponse:
+    normalized_ref = ref.strip().lower()
+    if not normalized_ref:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Connection ref is required.")
+
+    content = await file.read()
+    max_bytes = settings.max_upload_mb * 1_048_576
+    if len(content) > max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Upload exceeds {settings.max_upload_mb} MB limit.",
+        )
+    if not content:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is empty.")
+
+    try:
+        staging_file_id = staging_store.save_upload(normalized_ref, content)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    return StagingUploadResponse(staging_file_id=staging_file_id)
 
 
 @router.post("", response_model=ConnectionRecord, status_code=status.HTTP_201_CREATED)
@@ -96,8 +128,10 @@ def update_connection(
 def delete_connection(
     ref: str,
     store: ConnectionStore = Depends(get_connection_store),
+    staging_store: StagingStore = Depends(get_staging_store),
 ) -> None:
     try:
         store.delete(ref)
     except ConnectionNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    staging_store.delete_connection_staging(ref.strip().lower())

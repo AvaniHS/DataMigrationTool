@@ -80,6 +80,7 @@ export function useConnections(): UseConnectionsResult {
     const response = await testConnection({
       connector_id: body.connector_id,
       connector_payload: body.connector_payload,
+      connection_ref: body.ref || null,
     });
     if (!response.success || !response.verification_token) {
       throw new Error(response.message || "Connection test failed.");
