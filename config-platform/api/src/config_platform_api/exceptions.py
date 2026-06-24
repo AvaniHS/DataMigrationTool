@@ -11,3 +11,7 @@ class MigrationStoreError(Exception):
 
 class IntrospectionError(Exception):
     """Raised when schema introspection fails."""
+
+
+class DdlError(Exception):
+    """Raised when target DDL operations fail."""

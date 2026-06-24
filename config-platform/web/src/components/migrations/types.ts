@@ -14,6 +14,7 @@ export type BlueprintTarget = {
   primary_keys: string[];
   on_conflict: string;
   unprocessed_table?: string | null;
+  audit_table?: string | null;
 };
 
 export type RootTableSource = {

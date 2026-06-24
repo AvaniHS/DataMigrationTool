@@ -1,6 +1,6 @@
 # Config Platform — Requirements (v1)
 
-**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P5 done; P6 next.  
+**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P6 done; P7 next.  
 **Product:** `config-platform/` (UI + API)  
 **Based on:** Original UI toolkit ideas (refined and aligned with script-generator contract)  
 **Related:** [../docs/INTEGRATION.md](../docs/INTEGRATION.md) · [../docs/sampleConfigfile.json](../docs/sampleConfigfile.json) · [../script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md)
@@ -945,7 +945,7 @@ You asked when to validate — direct mappings need little; expressions need eng
 | Metadata (SQL) | `GET /connections/{ref}/schemas`, `.../tables`, `.../columns` | DB introspection |
 | Metadata (files) | `GET /connections/{ref}/files`, `.../files/{name}/columns` | S3 list + sample column preview (§7.1) |
 | File upload | `POST /connections/{ref}/files/upload` | Size-capped staging (OQ-12; P3.5) |
-| Target DDL | `POST /connections/{ref}/tables/copy-structure` | For `unprocessed_table` (P6) |
+| Target DDL | `POST /connections/{ref}/tables/copy-structure` | Copy target structure or create audit table on target (P6) |
 | Export | `GET /migrations/{id}/export` | Produces contract JSON |
 | Validate proxy | `POST /migrations/{id}/validate` | Forwards assembled export JSON to script-generator `/validate` (embedded fallback in monorepo dev) |
 
@@ -1176,9 +1176,9 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 ### Phase P6 — `unprocessed_table` + audit table
 
 - [x] `unprocessed_table` field on blueprint model (API + types)
-- [ ] `POST /connections/{ref}/tables/copy-structure` — create on target
-- [ ] B2 UI — `IGNORE_AND_INSERT_UNPROCESSED` + **Create on target**
-- [ ] B2 UI — `IGNORE_AND_LOG` audit table proposal + create (§12.4)
+- [x] `POST /connections/{ref}/tables/copy-structure` — create on target (`COPY_FROM_TABLE` + `AUDIT_TABLE`)
+- [x] B2 UI — `IGNORE_AND_INSERT_UNPROCESSED` + **Create on target**
+- [x] B2 UI — `IGNORE_AND_LOG` audit table proposal + create (§12.4)
 
 **Exit criteria:** B2 conflict flows complete for unprocessed + audit tables.
 
@@ -1217,7 +1217,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - **P1.5 vs P3.5:** **P1.5** = `local_csv` connector (Connect UI, test, export). **P3.5** = blueprint **B1** SchemaTree + file pickers. Same feature; two exit checks.
 - **P3.5** can start after P3 B1 is in progress; migrator streaming (P9) can trail config export.
-- **Recommended next build:** **P6** (unprocessed/audit table DDL helpers).
+- **Recommended next build:** **P7** (optional generate SQL proxy).
 
 ### 11.1 Phase summary (quick view)
 
@@ -1231,7 +1231,8 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 | **P3.5** | [x] Complete | B1/B3 file source wiring; wizard upload widget optional polish |
 | **P4** | [x] Complete | `GET /migrations/{id}/export` + preview/download UI |
 | **P5** | [x] Complete | Validate proxy, review UI, download gate |
-| **P6–P9** | [ ] Not started | DDL helpers, migrator handoff |
+| **P6** | [x] Complete | copy-structure DDL + B2 unprocessed/audit create-on-target |
+| **P7–P9** | [ ] Not started | Generate SQL, migrator handoff |
 
 ### 11.2 v1 sign-off checklist
 

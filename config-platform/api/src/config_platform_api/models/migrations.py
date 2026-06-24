@@ -25,6 +25,7 @@ class BlueprintTarget(_StrictModel):
     primary_keys: list[str] = Field(default_factory=list)
     on_conflict: OnConflictStrategy = OnConflictStrategy.FAIL
     unprocessed_table: str | None = None
+    audit_table: str | None = None
 
 
 class RootTableSource(_StrictModel):

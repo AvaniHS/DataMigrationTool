@@ -62,6 +62,11 @@ export function StepBlueprintReview({ blueprint }: StepBlueprintReviewProps) {
             Unprocessed table: {blueprint.target.unprocessed_table}
           </Typography>
         )}
+        {blueprint.target.audit_table && (
+          <Typography variant="body2" color="text.secondary">
+            Audit table: {blueprint.target.audit_table}
+          </Typography>
+        )}
       </Box>
 
       <Divider />

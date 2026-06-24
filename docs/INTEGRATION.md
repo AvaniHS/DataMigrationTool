@@ -84,6 +84,7 @@ Base URL example: `http://localhost:8000`
 | Migration export | `GET /migrations/{id}/export` — contract JSON (`?download=true` requires validation pass) |
 | Connections export | `GET /connections/export` — per-connection contract fragments |
 | Validate proxy | `POST /migrations/{id}/validate` — forwards export JSON to script-generator `POST /validate` |
+| Target DDL | `POST /connections/{ref}/tables/copy-structure` — `COPY_FROM_TABLE` or `AUDIT_TABLE` on target connection |
 
 Frontend (`config-platform/web/`) talks **only** to config API — never directly to script generator or migrator.
 

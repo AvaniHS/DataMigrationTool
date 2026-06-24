@@ -10,15 +10,17 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { listColumns, listSchemas, listTables, type ColumnNode } from "@/api/introspection";
 import { getApiErrorMessage } from "@/api/errors";
 import type { Blueprint } from "@/components/migrations/types";
 import type { ConnectionListItem } from "@/components/connections/types";
 import { ON_CONFLICT_OPTIONS } from "./blueprintHelpers";
+import { CreateOnTargetPanel } from "./CreateOnTargetPanel";
+import { proposeAuditTableName, proposeUnprocessedTableName } from "./tableDdlHelpers";
 
 type StepTargetConflictProps = {
+  migrationId: string;
   blueprint: Blueprint;
   connections: ConnectionListItem[];
   onChange: (blueprint: Blueprint) => void;
@@ -26,6 +28,7 @@ type StepTargetConflictProps = {
 };
 
 export function StepTargetConflict({
+  migrationId,
   blueprint,
   connections,
   onChange,
@@ -121,6 +124,28 @@ export function StepTargetConflict({
     void loadTargetColumns(target.connection_ref, target.schema, target.table_name);
   }, [loadTargetColumns, target.connection_ref, target.schema, target.table_name]);
 
+  useEffect(() => {
+    if (target.on_conflict !== "IGNORE_AND_INSERT_UNPROCESSED") {
+      return;
+    }
+    if (target.unprocessed_table?.trim() || !target.schema || !target.table_name) {
+      return;
+    }
+    updateTarget({ unprocessed_table: proposeUnprocessedTableName(target.schema, target.table_name) });
+  }, [target.on_conflict, target.schema, target.table_name, target.unprocessed_table]);
+
+  useEffect(() => {
+    if (target.on_conflict !== "IGNORE_AND_LOG") {
+      return;
+    }
+    if (target.audit_table?.trim() || !target.schema) {
+      return;
+    }
+    updateTarget({
+      audit_table: proposeAuditTableName(migrationId, blueprint.sequence_order, target.schema),
+    });
+  }, [target.on_conflict, target.schema, target.audit_table, migrationId, blueprint.sequence_order]);
+
   const togglePrimaryKey = (columnName: string) => {
     const selected = new Set(target.primary_keys);
     if (selected.has(columnName)) {
@@ -213,21 +238,39 @@ export function StepTargetConflict({
       </FormControl>
 
       {target.on_conflict === "IGNORE_AND_INSERT_UNPROCESSED" && (
-        <TextField
-          size="small"
-          label="Unprocessed table (schema.table)"
-          value={target.unprocessed_table ?? ""}
-          onChange={(event) => updateTarget({ unprocessed_table: event.target.value || null })}
-          sx={{ maxWidth: 420 }}
-          helperText="Required for IGNORE_AND_INSERT_UNPROCESSED. Create-on-target DDL is P6."
+        <CreateOnTargetPanel
+          connectionRef={target.connection_ref}
+          mode="COPY_FROM_TABLE"
+          destinationValue={target.unprocessed_table ?? ""}
+          onDestinationChange={(value) => updateTarget({ unprocessed_table: value || null })}
+          migrationId={migrationId}
+          blueprintSequence={blueprint.sequence_order}
+          sourceSchema={target.schema}
+          sourceTable={target.table_name}
+          targetSchema={target.schema}
+          targetTable={target.table_name}
+          primaryKeyColumns={target.primary_keys}
+          targetColumns={columns}
+          destinationLabel="Unprocessed table (schema.table)"
+          helperText="Copies the target table structure (no data) on the target connection."
         />
       )}
 
       {target.on_conflict === "IGNORE_AND_LOG" && (
-        <Alert severity="info" sx={{ py: 0.5 }}>
-          Audit table proposal and create-on-target flow ships in P6. Configure conflict logging table name during
-          review/export for now.
-        </Alert>
+        <CreateOnTargetPanel
+          connectionRef={target.connection_ref}
+          mode="AUDIT_TABLE"
+          destinationValue={target.audit_table ?? ""}
+          onDestinationChange={(value) => updateTarget({ audit_table: value || null })}
+          migrationId={migrationId}
+          blueprintSequence={blueprint.sequence_order}
+          targetSchema={target.schema}
+          targetTable={target.table_name}
+          primaryKeyColumns={target.primary_keys}
+          targetColumns={columns}
+          destinationLabel="Audit table (schema.table)"
+          helperText="Proposed from migration and blueprint context (§12.4). Edit before create if needed."
+        />
       )}
 
       <Box>

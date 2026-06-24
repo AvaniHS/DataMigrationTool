@@ -161,6 +161,7 @@ export function BlueprintWizard({
             )}
             {activeStep.id === "target" && (
               <StepTargetConflict
+                migrationId={migrationId}
                 blueprint={draft}
                 connections={connections}
                 onChange={handleBlueprintChange}
