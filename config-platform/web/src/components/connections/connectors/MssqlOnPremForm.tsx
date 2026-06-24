@@ -12,7 +12,7 @@ export function MssqlOnPremForm({
   onMssqlDomainChange,
 }: ConnectorFormProps) {
   const showSqlLogin = authMethod === "sql_login";
-  const showWindowsLogin = authMethod === "windows_login";
+  const showDomainAuth = authMethod === "windows_login" || authMethod === "ntlm";
   const showIntegrated = authMethod === "windows_integrated";
 
   return (
@@ -23,7 +23,7 @@ export function MssqlOnPremForm({
           domain-joined Windows host.
         </Alert>
       )}
-      {showWindowsLogin && (
+      {showDomainAuth && (
         <TextField
           size="small"
           label="Domain"
@@ -36,7 +36,7 @@ export function MssqlOnPremForm({
         value={sqlFields}
         onChange={onSqlFieldsChange}
         hideCredentials={showIntegrated}
-        requireCredentials={showSqlLogin || showWindowsLogin}
+        requireCredentials={showSqlLogin || showDomainAuth}
       />
     </Stack>
   );

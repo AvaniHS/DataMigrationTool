@@ -1,6 +1,6 @@
 # Config Platform — Requirements (v1)
 
-**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P2 and P1.1–P1.3 done; P1.4+ and P3 next.  
+**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P2 and P1.1–P1.6 done; P3 next.  
 **Product:** `config-platform/` (UI + API)  
 **Based on:** Original UI toolkit ideas (refined and aligned with script-generator contract)  
 **Related:** [../docs/INTEGRATION.md](../docs/INTEGRATION.md) · [../docs/sampleConfigfile.json](../docs/sampleConfigfile.json) · [../script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md)
@@ -1086,10 +1086,10 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 ### Phase P1.4 — SSL/TLS + advanced S3 auth
 
-- [ ] `mysql` — full `ssl_mode` matrix (`password_ssl`)
-- [ ] `postgresql` — `password_ssl_client_cert`
-- [ ] `csv_s3_bucket` — `session_token`, `instance_profile`, `assume_role`
-- [ ] `mssql_onprem` — `ntlm` (if needed in target environments)
+- [x] `mysql` — full `ssl_mode` matrix (`password_ssl`)
+- [x] `postgresql` — `password_ssl_client_cert`
+- [x] `csv_s3_bucket` — `session_token`, `instance_profile`, `assume_role`
+- [x] `mssql_onprem` — `ntlm` (if needed in target environments)
 
 **Exit criteria:** Should-have auth tier complete per §7.2.2a.
 
@@ -1105,8 +1105,8 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 ### Phase P1.6 — AWS RDS IAM
 
-- [ ] `mysql_rds_iam`, `postgresql_rds_iam` auth methods
-- [ ] Export intent only; migrator token acquisition documented
+- [x] `mysql_rds_iam`, `postgresql_rds_iam` auth methods
+- [x] Export intent only; migrator token acquisition documented
 
 **Exit criteria:** RDS IAM auth testable; export consumable by migrator.
 

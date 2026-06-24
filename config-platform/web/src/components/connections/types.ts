@@ -30,6 +30,35 @@ export type S3BucketFields = {
   aws_region: string;
   access_key_id: string;
   secret_access_key: string;
+  session_token: string;
+  role_arn: string;
+  external_id: string;
+};
+
+export type MysqlSslMode =
+  | "DISABLED"
+  | "PREFERRED"
+  | "REQUIRED"
+  | "VERIFY_CA"
+  | "VERIFY_IDENTITY";
+
+export const MYSQL_SSL_MODES: MysqlSslMode[] = [
+  "DISABLED",
+  "PREFERRED",
+  "REQUIRED",
+  "VERIFY_CA",
+  "VERIFY_IDENTITY",
+];
+
+export type MysqlSslFields = {
+  ssl_mode: MysqlSslMode;
+  ssl_ca_path: string;
+};
+
+export type PostgresClientCertFields = {
+  sslrootcert: string;
+  sslcert: string;
+  sslkey: string;
 };
 
 export type AzureEntraFields = {
@@ -138,6 +167,24 @@ export function createEmptyS3Fields(): S3BucketFields {
     aws_region: "us-east-1",
     access_key_id: "",
     secret_access_key: "",
+    session_token: "",
+    role_arn: "",
+    external_id: "",
+  };
+}
+
+export function createEmptyMysqlSslFields(): MysqlSslFields {
+  return {
+    ssl_mode: "PREFERRED",
+    ssl_ca_path: "",
+  };
+}
+
+export function createEmptyPostgresClientCertFields(): PostgresClientCertFields {
+  return {
+    sslrootcert: "",
+    sslcert: "",
+    sslkey: "",
   };
 }
 

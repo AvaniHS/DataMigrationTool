@@ -7,6 +7,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 ENTRA_SERVICE_PRINCIPAL = "entra_service_principal"
 ENTRA_PASSWORD = "entra_password"
 ENTRA_MANAGED_IDENTITY = "entra_managed_identity"
+PASSWORD_SSL = "password_ssl"
+MYSQL_RDS_IAM = "mysql_rds_iam"
+PASSWORD_SSL_CLIENT_CERT = "password_ssl_client_cert"
+POSTGRESQL_RDS_IAM = "postgresql_rds_iam"
+
+MysqlSslMode = Literal["DISABLED", "PREFERRED", "REQUIRED", "VERIFY_CA", "VERIFY_IDENTITY"]
 
 
 class _StrictModel(BaseModel):
@@ -34,13 +40,22 @@ def _require_non_empty(value: str, field_name: str) -> None:
 
 
 class MysqlConnectorPayload(_StrictModel):
-    auth_method: Literal["password", ENTRA_SERVICE_PRINCIPAL, ENTRA_MANAGED_IDENTITY] = "password"
+    auth_method: Literal[
+        "password",
+        PASSWORD_SSL,
+        ENTRA_SERVICE_PRINCIPAL,
+        ENTRA_MANAGED_IDENTITY,
+        MYSQL_RDS_IAM,
+    ] = "password"
     host: str = Field(min_length=1)
     port: int = Field(default=3306, ge=1, le=65535)
     database: str = Field(min_length=1)
     username: str = ""
     password: str = ""
     ssl_enabled: bool = False
+    ssl_mode: MysqlSslMode = "PREFERRED"
+    ssl_ca_path: str = ""
+    aws_region: str = ""
     tenant_id: str = ""
     client_id: str = ""
     client_secret: str = ""
@@ -51,8 +66,10 @@ class MysqlConnectorPayload(_StrictModel):
 
     @model_validator(mode="after")
     def validate_auth_fields(self) -> Self:
-        if self.auth_method == "password":
+        if self.auth_method in {"password", PASSWORD_SSL, MYSQL_RDS_IAM}:
             _require_non_empty(self.username, "username")
+        if self.auth_method == MYSQL_RDS_IAM:
+            _require_non_empty(self.aws_region, "aws_region")
         if self.auth_method == ENTRA_SERVICE_PRINCIPAL:
             _require_non_empty(self.tenant_id, "tenant_id")
             _require_non_empty(self.client_id, "client_id")
@@ -66,9 +83,11 @@ class MysqlConnectorPayload(_StrictModel):
 class PostgresqlConnectorPayload(_StrictModel):
     auth_method: Literal[
         "password",
+        PASSWORD_SSL_CLIENT_CERT,
         ENTRA_PASSWORD,
         ENTRA_SERVICE_PRINCIPAL,
         ENTRA_MANAGED_IDENTITY,
+        POSTGRESQL_RDS_IAM,
     ] = "password"
     host: str = Field(min_length=1)
     port: int = Field(default=5432, ge=1, le=65535)
@@ -76,6 +95,10 @@ class PostgresqlConnectorPayload(_StrictModel):
     username: str = ""
     password: str = ""
     sslmode: Literal["disable", "allow", "prefer", "require", "verify-ca", "verify-full"] = "prefer"
+    sslrootcert: str = ""
+    sslcert: str = ""
+    sslkey: str = ""
+    aws_region: str = ""
     tenant_id: str = ""
     client_id: str = ""
     client_secret: str = ""
@@ -87,8 +110,14 @@ class PostgresqlConnectorPayload(_StrictModel):
 
     @model_validator(mode="after")
     def validate_auth_fields(self) -> Self:
-        if self.auth_method == "password":
+        if self.auth_method in {"password", PASSWORD_SSL_CLIENT_CERT, POSTGRESQL_RDS_IAM}:
             _require_non_empty(self.username, "username")
+        if self.auth_method == PASSWORD_SSL_CLIENT_CERT:
+            _require_non_empty(self.sslrootcert, "sslrootcert")
+            _require_non_empty(self.sslcert, "sslcert")
+            _require_non_empty(self.sslkey, "sslkey")
+        if self.auth_method == POSTGRESQL_RDS_IAM:
+            _require_non_empty(self.aws_region, "aws_region")
         if self.auth_method == ENTRA_PASSWORD:
             _require_non_empty(self.tenant_id, "tenant_id")
             _require_non_empty(self.client_id, "client_id")
@@ -120,7 +149,10 @@ class MssqlOnPremPayload(_StrictModel):
     @model_validator(mode="after")
     def validate_auth_fields(self) -> Self:
         if self.auth_method == "ntlm":
-            raise ValueError("ntlm auth is available in P1.4.")
+            if not self.username:
+                raise ValueError("username is required for ntlm")
+            if not self.domain:
+                raise ValueError("domain is required for ntlm")
         if self.auth_method == "sql_login" and not self.username:
             raise ValueError("username is required for sql_login")
         if self.auth_method == "windows_login":
@@ -177,6 +209,7 @@ class S3BucketConnectorPayload(_StrictModel):
     secret_access_key: str = ""
     session_token: str = ""
     role_arn: str = ""
+    external_id: str = ""
 
     @field_validator("s3_bucket_uri")
     @classmethod
@@ -187,12 +220,21 @@ class S3BucketConnectorPayload(_StrictModel):
 
     @model_validator(mode="after")
     def validate_auth_fields(self) -> Self:
-        if self.auth_method != "access_key":
-            raise ValueError(f"{self.auth_method} is available in P1.4.")
-        if not self.access_key_id:
-            raise ValueError("access_key_id is required for access_key auth")
-        if not self.secret_access_key:
-            raise ValueError("secret_access_key is required for access_key auth")
+        if self.auth_method == "access_key":
+            if not self.access_key_id:
+                raise ValueError("access_key_id is required for access_key auth")
+            if not self.secret_access_key:
+                raise ValueError("secret_access_key is required for access_key auth")
+        if self.auth_method == "session_token":
+            if not self.access_key_id:
+                raise ValueError("access_key_id is required for session_token auth")
+            if not self.secret_access_key:
+                raise ValueError("secret_access_key is required for session_token auth")
+            if not self.session_token:
+                raise ValueError("session_token is required for session_token auth")
+        if self.auth_method == "assume_role":
+            if not self.role_arn:
+                raise ValueError("role_arn is required for assume_role auth")
         return self
 
 

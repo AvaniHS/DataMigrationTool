@@ -44,9 +44,11 @@ Each entry under `connections` includes:
 | `s3_bucket_uri` / `aws_region` | S3 file sources |
 | `access_key_id` | S3 non-secret identifier |
 | `entra` | Entra non-secrets (`tenant_id`, `client_id`) for service principal |
+| `aws` | AWS non-secrets (`region`) for RDS IAM and role-based S3 auth |
+| `role_arn` / `external_id` | S3 `assume_role` auth (P1.4) |
 | `secret_ref` | Optional vault pointer when secrets are not inlined |
 
-Secrets (`password`, `client_secret`, `secret_access_key`) may be inlined in dev exports; production should use `secret_ref`. Migrator acquires short-lived Entra/RDS tokens at run time per `auth_method` (see config-platform `REQUIREMENTS.md` §7.2.10).
+Secrets (`password`, `client_secret`, `secret_access_key`, `session_token`) may be inlined in dev exports; production should use `secret_ref`. Migrator acquires short-lived Entra/RDS IAM tokens at run time per `auth_method` (see config-platform `REQUIREMENTS.md` §7.2.10). For `mysql_rds_iam` / `postgresql_rds_iam`, export includes `aws.region` and IAM DB username only — migrator calls `generate_db_auth_token` before connect.
 
 ---
 

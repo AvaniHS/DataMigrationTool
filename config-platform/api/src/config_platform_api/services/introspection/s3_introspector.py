@@ -2,10 +2,10 @@
 
 from urllib.parse import urlparse
 
-import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
 from config_platform_api.connectors.payloads import S3BucketConnectorPayload
+from config_platform_api.connectors.s3_auth import create_s3_client
 from config_platform_api.models.introspection import S3FileNode
 
 
@@ -16,12 +16,7 @@ def list_s3_files(fields: S3BucketConnectorPayload) -> list[S3FileNode]:
     if not bucket:
         raise ValueError("S3 bucket URI must include a bucket name.")
 
-    client = boto3.client(
-        "s3",
-        region_name=fields.aws_region,
-        aws_access_key_id=fields.access_key_id or None,
-        aws_secret_access_key=fields.secret_access_key or None,
-    )
+    client = create_s3_client(fields)
     files: list[S3FileNode] = []
     continuation_token: str | None = None
 

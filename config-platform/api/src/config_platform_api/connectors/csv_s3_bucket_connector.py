@@ -3,12 +3,12 @@
 from typing import Any
 from urllib.parse import urlparse
 
-import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from pydantic import ValidationError
 
 from config_platform_api.connectors.base import BaseConnector, ConnectorTestResult, ConnectorValidationError
 from config_platform_api.connectors.payloads import S3BucketConnectorPayload
+from config_platform_api.connectors.s3_auth import create_s3_client
 from config_platform_api.connectors.sql_helpers import sanitize_connection_error
 from config_platform_api.logging_setup import get_logger
 from config_platform_api.models.connectors import AuthMethodSchema
@@ -43,26 +43,34 @@ class CsvS3BucketConnector(BaseConnector):
 
     def test_connect(self, payload: dict[str, Any]) -> ConnectorTestResult:
         validated = self.validate(payload)
-        return _test_s3_bucket(
-            validated["s3_bucket_uri"],
-            validated["aws_region"],
-            validated["access_key_id"],
-            validated["secret_access_key"],
-        )
+        return _test_s3_bucket(validated)
 
     def build_export(self, payload: dict[str, Any], *, secret_ref: str | None = None) -> dict[str, Any]:
         validated = self.validate(payload)
+        auth_method = validated["auth_method"]
         exported: dict[str, Any] = {
             "type": self.export_type,
-            "auth_method": validated["auth_method"],
+            "auth_method": auth_method,
             "s3_bucket_uri": validated["s3_bucket_uri"],
             "aws_region": validated["aws_region"],
-            "access_key_id": validated["access_key_id"],
         }
-        if secret_ref is not None:
-            exported["secret_ref"] = secret_ref
-        else:
-            exported["secret_access_key"] = validated["secret_access_key"]
+        if auth_method == "access_key":
+            exported["access_key_id"] = validated["access_key_id"]
+            if secret_ref is not None:
+                exported["secret_ref"] = secret_ref
+            else:
+                exported["secret_access_key"] = validated["secret_access_key"]
+        elif auth_method == "session_token":
+            exported["access_key_id"] = validated["access_key_id"]
+            if secret_ref is not None:
+                exported["secret_ref"] = secret_ref
+            else:
+                exported["secret_access_key"] = validated["secret_access_key"]
+                exported["session_token"] = validated["session_token"]
+        elif auth_method == "assume_role":
+            exported["role_arn"] = validated["role_arn"]
+            if validated.get("external_id"):
+                exported["external_id"] = validated["external_id"]
         return exported
 
     def build_summary(self, payload: dict[str, Any]) -> str:
@@ -70,34 +78,30 @@ class CsvS3BucketConnector(BaseConnector):
         return validated["s3_bucket_uri"]
 
 
-def _test_s3_bucket(
-    s3_bucket_uri: str,
-    aws_region: str,
-    access_key_id: str,
-    secret_access_key: str,
-) -> ConnectorTestResult:
-    parsed = urlparse(s3_bucket_uri)
+def _test_s3_bucket(validated: dict[str, Any]) -> ConnectorTestResult:
+    parsed = urlparse(validated["s3_bucket_uri"])
     bucket = parsed.netloc
     prefix = parsed.path.lstrip("/")
     if not bucket:
         return ConnectorTestResult(False, "S3 bucket URI must include a bucket name.")
 
     try:
-        client = boto3.client(
-            "s3",
-            region_name=aws_region,
-            aws_access_key_id=access_key_id,
-            aws_secret_access_key=secret_access_key,
-        )
+        client = create_s3_client(validated)
         client.head_bucket(Bucket=bucket)
         if prefix:
             client.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=1)
-        return ConnectorTestResult(True, f"S3 bucket '{bucket}' is reachable in {aws_region}.")
+        return ConnectorTestResult(
+            True,
+            f"S3 bucket '{bucket}' is reachable in {validated['aws_region']}.",
+        )
+    except ConnectorValidationError as exc:
+        return ConnectorTestResult(False, str(exc))
     except (BotoCoreError, ClientError) as exc:
         logger.warning(
             "csv_s3_bucket_connector_test_failed",
             bucket=bucket,
-            aws_region=aws_region,
+            aws_region=validated.get("aws_region"),
+            auth_method=validated.get("auth_method"),
             error=str(exc),
             exc_info=True,
         )

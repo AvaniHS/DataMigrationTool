@@ -6,7 +6,7 @@ export function S3BucketForm({ authMethod, s3Fields, onS3FieldsChange }: Connect
     <S3ConnectionFieldsForm
       value={s3Fields}
       onChange={onS3FieldsChange}
-      showAccessKeys={authMethod === "access_key"}
+      authMethod={authMethod}
     />
   );
 }

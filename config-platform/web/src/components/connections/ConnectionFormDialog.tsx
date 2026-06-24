@@ -17,13 +17,18 @@ import {
   defaultAuthMethod,
   initialAzureEntraFields,
   initialLocalCsvFields,
+  initialMysqlSslFields,
+  initialPostgresClientCertFields,
   initialS3Fields,
   initialSqlFieldsForConnector,
   parseAzureEntraFromPayload,
   parseLocalCsvFromPayload,
   parseMssqlDomainFromPayload,
   parseMysqlSslEnabled,
+  parseMysqlSslFieldsFromPayload,
+  parsePostgresClientCertFromPayload,
   parsePostgresSslMode,
+  parseRdsAwsRegionFromPayload,
   parseS3FieldsFromPayload,
   parseSqlFieldsFromPayload,
 } from "@/components/connections/connectorPayloads";
@@ -38,6 +43,8 @@ import type {
   ConnectorCatalogItem,
   ConnectorCategory,
   LocalCsvFields,
+  MysqlSslFields,
+  PostgresClientCertFields,
   PostgresSslMode,
   S3BucketFields,
   SqlDatabaseFields,
@@ -74,6 +81,11 @@ export function ConnectionFormDialog({
   const [azureServer, setAzureServer] = useState("");
   const [mssqlDomain, setMssqlDomain] = useState("");
   const [mysqlSslEnabled, setMysqlSslEnabled] = useState(false);
+  const [mysqlSslFields, setMysqlSslFields] = useState<MysqlSslFields>(initialMysqlSslFields());
+  const [postgresClientCertFields, setPostgresClientCertFields] = useState<PostgresClientCertFields>(
+    initialPostgresClientCertFields(),
+  );
+  const [rdsAwsRegion, setRdsAwsRegion] = useState("");
   const [postgresSslMode, setPostgresSslMode] = useState<PostgresSslMode>("prefer");
   const [azureEntra, setAzureEntra] = useState<AzureEntraFields>(initialAzureEntraFields());
   const [localCsvFields, setLocalCsvFields] = useState<LocalCsvFields>(initialLocalCsvFields());
@@ -117,6 +129,9 @@ export function ConnectionFormDialog({
       setAzureServer(String(payload.server ?? payload.host ?? ""));
       setMssqlDomain(parseMssqlDomainFromPayload(payload));
       setMysqlSslEnabled(parseMysqlSslEnabled(payload));
+      setMysqlSslFields(parseMysqlSslFieldsFromPayload(payload));
+      setPostgresClientCertFields(parsePostgresClientCertFromPayload(payload));
+      setRdsAwsRegion(parseRdsAwsRegionFromPayload(payload));
       setPostgresSslMode(parsePostgresSslMode(payload));
       setAzureEntra(parseAzureEntraFromPayload(payload));
       const item = findCatalogItem(catalog, initialValues.connector_id);
@@ -133,6 +148,9 @@ export function ConnectionFormDialog({
       setAzureServer("");
       setMssqlDomain("");
       setMysqlSslEnabled(false);
+      setMysqlSslFields(initialMysqlSslFields());
+      setPostgresClientCertFields(initialPostgresClientCertFields());
+      setRdsAwsRegion("");
       setPostgresSslMode("prefer");
       setAzureEntra(initialAzureEntraFields());
       setLocalCsvFields(initialLocalCsvFields());
@@ -149,6 +167,9 @@ export function ConnectionFormDialog({
         azureServer,
         mssqlDomain,
         mysqlSslEnabled,
+        mysqlSslFields,
+        postgresClientCertFields,
+        rdsAwsRegion,
         postgresSslMode,
         azureEntra,
         localCsv: localCsvFields,
@@ -161,6 +182,9 @@ export function ConnectionFormDialog({
       localCsvFields,
       mssqlDomain,
       mysqlSslEnabled,
+      mysqlSslFields,
+      postgresClientCertFields,
+      rdsAwsRegion,
       postgresSslMode,
       s3Fields,
       sqlFields,
@@ -196,6 +220,9 @@ export function ConnectionFormDialog({
     setAzureServer("");
     setMssqlDomain("");
     setMysqlSslEnabled(false);
+    setMysqlSslFields(initialMysqlSslFields());
+    setPostgresClientCertFields(initialPostgresClientCertFields());
+    setRdsAwsRegion("");
     setPostgresSslMode("prefer");
     setAzureEntra(initialAzureEntraFields());
     setLocalCsvFields(initialLocalCsvFields());
@@ -326,6 +353,9 @@ export function ConnectionFormDialog({
               azureServer={azureServer}
               mssqlDomain={mssqlDomain}
               mysqlSslEnabled={mysqlSslEnabled}
+              mysqlSslFields={mysqlSslFields}
+              postgresClientCertFields={postgresClientCertFields}
+              rdsAwsRegion={rdsAwsRegion}
               postgresSslMode={postgresSslMode}
               azureEntra={azureEntra}
               onSqlFieldsChange={(nextValue) => {
@@ -350,6 +380,18 @@ export function ConnectionFormDialog({
               }}
               onMysqlSslEnabledChange={(value) => {
                 setMysqlSslEnabled(value);
+                invalidateTest();
+              }}
+              onMysqlSslFieldsChange={(nextValue) => {
+                setMysqlSslFields(nextValue);
+                invalidateTest();
+              }}
+              onPostgresClientCertFieldsChange={(nextValue) => {
+                setPostgresClientCertFields(nextValue);
+                invalidateTest();
+              }}
+              onRdsAwsRegionChange={(value) => {
+                setRdsAwsRegion(value);
                 invalidateTest();
               }}
               onPostgresSslModeChange={(value) => {

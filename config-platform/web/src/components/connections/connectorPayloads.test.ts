@@ -123,6 +123,40 @@ describe("connectorPayloads", () => {
     });
   });
 
+  it("builds mysql password_ssl payload", () => {
+    const payload = buildConnectorPayload(
+      "mysql",
+      "password_ssl",
+      { ...initialSqlFieldsForConnector("mysql"), host: "db.local", database: "app", username: "u" },
+      createEmptyS3Fields(),
+      {
+        mysqlSslFields: { ssl_mode: "VERIFY_CA", ssl_ca_path: "/ca.pem" },
+      },
+    );
+    expect(payload).toMatchObject({
+      auth_method: "password_ssl",
+      ssl_mode: "VERIFY_CA",
+      ssl_ca_path: "/ca.pem",
+    });
+  });
+
+  it("builds s3 assume_role payload", () => {
+    const payload = buildConnectorPayload(
+      "csv_s3_bucket",
+      "assume_role",
+      initialSqlFieldsForConnector("mysql"),
+      {
+        ...createEmptyS3Fields(),
+        s3_bucket_uri: "s3://bucket/",
+        role_arn: "arn:aws:iam::1:role/r",
+      },
+    );
+    expect(payload).toMatchObject({
+      auth_method: "assume_role",
+      role_arn: "arn:aws:iam::1:role/r",
+    });
+  });
+
   it("parses extended entra fields from payload", () => {
     expect(
       parseAzureEntraFromPayload({
@@ -152,5 +186,6 @@ describe("isP12AuthMethod", () => {
     expect(isP12AuthMethod("mssql_onprem", "windows_integrated")).toBe(true);
     expect(isP12AuthMethod("azure_sql_database", "entra_service_principal")).toBe(true);
     expect(isP12AuthMethod("mssql_onprem", "ntlm")).toBe(false);
+    expect(isP12AuthMethod("csv_s3_bucket", "assume_role")).toBe(false);
   });
 });

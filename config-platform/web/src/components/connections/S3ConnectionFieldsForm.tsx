@@ -5,14 +5,18 @@ import type { S3BucketFields } from "@/components/connections/types";
 type S3ConnectionFieldsFormProps = {
   value: S3BucketFields;
   onChange: (nextValue: S3BucketFields) => void;
-  showAccessKeys?: boolean;
+  authMethod: string;
 };
 
 export function S3ConnectionFieldsForm({
   value,
   onChange,
-  showAccessKeys = true,
+  authMethod,
 }: S3ConnectionFieldsFormProps) {
+  const showAccessKeys = authMethod === "access_key" || authMethod === "session_token";
+  const showSessionToken = authMethod === "session_token";
+  const showAssumeRole = authMethod === "assume_role";
+
   return (
     <Stack spacing={1.5}>
       <TextField
@@ -48,6 +52,41 @@ export function S3ConnectionFieldsForm({
             required
           />
         </>
+      )}
+      {showSessionToken && (
+        <TextField
+          size="small"
+          label="Session token"
+          type="password"
+          value={value.session_token}
+          onChange={(event) => onChange({ ...value, session_token: event.target.value })}
+          required
+        />
+      )}
+      {showAssumeRole && (
+        <>
+          <TextField
+            size="small"
+            label="Role ARN"
+            value={value.role_arn}
+            onChange={(event) => onChange({ ...value, role_arn: event.target.value })}
+            required
+          />
+          <TextField
+            size="small"
+            label="External ID (optional)"
+            value={value.external_id}
+            onChange={(event) => onChange({ ...value, external_id: event.target.value })}
+          />
+        </>
+      )}
+      {authMethod === "instance_profile" && (
+        <TextField
+          size="small"
+          label="Auth"
+          value="Uses IAM role / instance profile on API host"
+          disabled
+        />
       )}
     </Stack>
   );

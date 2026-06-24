@@ -5,6 +5,8 @@ from typing import Any
 from pydantic import ValidationError
 from sqlalchemy.engine import Engine
 
+from config_platform_api.connectors.aws_export import build_aws_export_block
+from config_platform_api.connectors.aws_rds_iam import generate_rds_auth_token
 from config_platform_api.connectors.azure_entra import (
     acquire_azure_oss_rdbms_token_managed_identity,
     acquire_azure_oss_rdbms_token_password,
@@ -16,12 +18,15 @@ from config_platform_api.connectors.payloads import (
     ENTRA_MANAGED_IDENTITY,
     ENTRA_PASSWORD,
     ENTRA_SERVICE_PRINCIPAL,
+    PASSWORD_SSL_CLIENT_CERT,
+    POSTGRESQL_RDS_IAM,
     PostgresqlConnectorPayload,
     sql_fields_from_dict,
 )
 from config_platform_api.connectors.sql_helpers import (
     build_sql_connection_string,
     create_postgresql_engine,
+    create_postgresql_engine_with_rds_token,
     create_postgresql_engine_with_token,
     dispose_sql_engine,
     sanitize_connection_error,
@@ -45,6 +50,11 @@ class PostgresqlConnector(BaseConnector):
         return [
             AuthMethodSchema(id="password", label="Password", delivery_phase="P1.2"),
             AuthMethodSchema(
+                id=PASSWORD_SSL_CLIENT_CERT,
+                label="Password + client certificate",
+                delivery_phase="P1.4",
+            ),
+            AuthMethodSchema(
                 id=ENTRA_PASSWORD,
                 label="Microsoft Entra (user/password)",
                 delivery_phase="P1.3",
@@ -58,6 +68,11 @@ class PostgresqlConnector(BaseConnector):
                 id=ENTRA_MANAGED_IDENTITY,
                 label="Managed identity",
                 delivery_phase="P1.3",
+            ),
+            AuthMethodSchema(
+                id=POSTGRESQL_RDS_IAM,
+                label="AWS RDS IAM",
+                delivery_phase="P1.6",
             ),
         ]
 
@@ -100,21 +115,43 @@ class PostgresqlConnector(BaseConnector):
         if auth_method == "password":
             fields = sql_fields_from_dict(validated)
             connection_string = build_sql_connection_string(ConnectionType.POSTGRESQL, fields)
+        elif auth_method == PASSWORD_SSL_CLIENT_CERT:
+            fields = sql_fields_from_dict(validated)
+            connection_string = build_sql_connection_string(ConnectionType.POSTGRESQL, fields)
+            sslmode = "verify-full"
+        elif auth_method == POSTGRESQL_RDS_IAM:
+            connection_string = (
+                f"postgresql://{validated['username']}@{validated['host']}:"
+                f"{validated['port']}/{validated['database']}"
+            )
+            sslmode = "require"
         else:
             connection_string = (
                 f"postgresql://{validated['entra_user']}@{validated['host']}:"
                 f"{validated['port']}/{validated['database']}"
             )
             sslmode = "require"
+        driver_options: dict[str, object] = {"sslmode": sslmode}
+        if auth_method == PASSWORD_SSL_CLIENT_CERT:
+            driver_options.update(
+                {
+                    "sslrootcert": validated.get("sslrootcert", ""),
+                    "sslcert": validated.get("sslcert", ""),
+                    "sslkey": validated.get("sslkey", ""),
+                }
+            )
         exported: dict[str, Any] = {
             "type": self.export_type,
             "auth_method": auth_method,
             "connection_string": connection_string,
-            "driver_options": {"sslmode": sslmode},
+            "driver_options": driver_options,
         }
         entra = build_entra_export_block(validated)
         if entra:
             exported["entra"] = entra
+        aws = build_aws_export_block(validated)
+        if aws:
+            exported["aws"] = aws
         if secret_ref is not None:
             exported["secret_ref"] = secret_ref
         return exported
@@ -138,6 +175,30 @@ class PostgresqlConnector(BaseConnector):
             return create_postgresql_engine(
                 sql_fields_from_dict(validated),
                 sslmode=validated.get("sslmode", "prefer"),
+                connect_timeout=connect_timeout,
+            )
+        if auth_method == PASSWORD_SSL_CLIENT_CERT:
+            return create_postgresql_engine(
+                sql_fields_from_dict(validated),
+                sslmode="verify-full",
+                sslrootcert=validated.get("sslrootcert", ""),
+                sslcert=validated.get("sslcert", ""),
+                sslkey=validated.get("sslkey", ""),
+                connect_timeout=connect_timeout,
+            )
+        if auth_method == POSTGRESQL_RDS_IAM:
+            token = generate_rds_auth_token(
+                host=validated["host"],
+                port=validated["port"],
+                username=validated["username"],
+                region=validated["aws_region"],
+            )
+            return create_postgresql_engine_with_rds_token(
+                host=validated["host"],
+                port=validated["port"],
+                database=validated["database"],
+                username=validated["username"],
+                access_token=token,
                 connect_timeout=connect_timeout,
             )
 

@@ -8,6 +8,8 @@ import type {
   AzureEntraFields,
   ConnectorCatalogItem,
   LocalCsvFields,
+  MysqlSslFields,
+  PostgresClientCertFields,
   PostgresSslMode,
   S3BucketFields,
   SqlDatabaseFields,
@@ -23,6 +25,9 @@ export type ConnectorFormProps = {
   azureServer: string;
   mssqlDomain: string;
   mysqlSslEnabled: boolean;
+  mysqlSslFields: MysqlSslFields;
+  postgresClientCertFields: PostgresClientCertFields;
+  rdsAwsRegion: string;
   postgresSslMode: PostgresSslMode;
   azureEntra: AzureEntraFields;
   onSqlFieldsChange: (nextValue: SqlDatabaseFields) => void;
@@ -31,6 +36,9 @@ export type ConnectorFormProps = {
   onAzureServerChange: (value: string) => void;
   onMssqlDomainChange: (value: string) => void;
   onMysqlSslEnabledChange: (value: boolean) => void;
+  onMysqlSslFieldsChange: (nextValue: MysqlSslFields) => void;
+  onPostgresClientCertFieldsChange: (nextValue: PostgresClientCertFields) => void;
+  onRdsAwsRegionChange: (value: string) => void;
   onPostgresSslModeChange: (value: PostgresSslMode) => void;
   onAzureEntraChange: (nextValue: AzureEntraFields) => void;
 };
@@ -71,6 +79,22 @@ export function isP12AuthMethod(connectorId: string, authMethod: string): boolea
   }
   if (connectorId === "csv_s3_bucket") {
     return authMethod === "access_key";
+  }
+  if (connectorId === "mysql") {
+    return authMethod === "password";
+  }
+  if (connectorId === "postgresql") {
+    return authMethod === "password";
+  }
+  return true;
+}
+
+export function isImplementedAuthMethod(connectorId: string, authMethod: string): boolean {
+  if (connectorId === "mssql_onprem") {
+    return ["sql_login", "windows_integrated", "windows_login", "ntlm"].includes(authMethod);
+  }
+  if (connectorId === "csv_s3_bucket") {
+    return ["access_key", "session_token", "instance_profile", "assume_role"].includes(authMethod);
   }
   return true;
 }

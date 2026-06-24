@@ -73,6 +73,9 @@ def build_mssql_odbc_connect(
     elif auth_method == "windows_login":
         login = f"{domain}\\{username}" if domain else username
         parts.extend([f"UID={login}", f"PWD={password}"])
+    elif auth_method == "ntlm":
+        login = f"{domain}\\{username}" if domain else username
+        parts.extend([f"UID={login}", f"PWD={password}"])
     elif auth_method == "entra_service_principal":
         parts.extend(
             [

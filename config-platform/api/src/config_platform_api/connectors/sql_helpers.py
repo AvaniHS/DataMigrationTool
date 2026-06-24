@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ssl
 from urllib.parse import quote_plus
 
 from sqlalchemy import create_engine, text
@@ -47,16 +48,42 @@ def to_sqlalchemy_url(export_type: ConnectionType, connection_string: str) -> UR
     raise ConnectorValidationError(f"Unsupported export type: {export_type}")
 
 
+def _mysql_ssl_connect_arg(ssl_mode: str, ssl_ca_path: str = "") -> dict[str, object]:
+    mode = ssl_mode.upper()
+    if mode == "DISABLED":
+        return {}
+    if mode == "PREFERRED":
+        return {"ssl": {"ssl": True}}
+
+    context = ssl.create_default_context()
+    if ssl_ca_path:
+        context.load_verify_locations(ssl_ca_path)
+    if mode == "REQUIRED":
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+    elif mode == "VERIFY_CA":
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_REQUIRED
+    elif mode == "VERIFY_IDENTITY":
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.check_hostname = True
+    return {"ssl": context}
+
+
 def create_mysql_engine(
     fields: SqlPasswordFields,
     *,
     ssl_enabled: bool = False,
+    ssl_mode: str | None = None,
+    ssl_ca_path: str = "",
     connect_timeout: int = 10,
 ) -> Engine:
     connection_string = build_sql_connection_string(ConnectionType.MYSQL, fields)
     url = to_sqlalchemy_url(ConnectionType.MYSQL, connection_string)
     connect_args: dict[str, object] = {"connect_timeout": connect_timeout}
-    if ssl_enabled:
+    if ssl_mode:
+        connect_args.update(_mysql_ssl_connect_arg(ssl_mode, ssl_ca_path))
+    elif ssl_enabled:
         connect_args["ssl"] = {"ssl": True}
     return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
 
@@ -65,12 +92,60 @@ def create_postgresql_engine(
     fields: SqlPasswordFields,
     *,
     sslmode: str = "prefer",
+    sslrootcert: str = "",
+    sslcert: str = "",
+    sslkey: str = "",
     connect_timeout: int = 10,
 ) -> Engine:
     connection_string = build_sql_connection_string(ConnectionType.POSTGRESQL, fields)
     url = to_sqlalchemy_url(ConnectionType.POSTGRESQL, connection_string)
-    url = url.update_query_dict(sslmode=sslmode)
+    query: dict[str, str] = {"sslmode": sslmode}
+    if sslrootcert:
+        query["sslrootcert"] = sslrootcert
+    if sslcert:
+        query["sslcert"] = sslcert
+    if sslkey:
+        query["sslkey"] = sslkey
+    url = url.update_query_dict(**query)
     return create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": connect_timeout})
+
+
+def create_mysql_engine_with_rds_token(
+    *,
+    host: str,
+    port: int,
+    database: str,
+    username: str,
+    access_token: str,
+    connect_timeout: int = 10,
+) -> Engine:
+    fields = SqlPasswordFields(
+        host=host,
+        port=port,
+        database=database,
+        username=username,
+        password=access_token,
+    )
+    return create_mysql_engine(fields, ssl_mode="REQUIRED", connect_timeout=connect_timeout)
+
+
+def create_postgresql_engine_with_rds_token(
+    *,
+    host: str,
+    port: int,
+    database: str,
+    username: str,
+    access_token: str,
+    connect_timeout: int = 10,
+) -> Engine:
+    fields = SqlPasswordFields(
+        host=host,
+        port=port,
+        database=database,
+        username=username,
+        password=access_token,
+    )
+    return create_postgresql_engine(fields, sslmode="require", connect_timeout=connect_timeout)
 
 
 def create_mysql_engine_with_token(

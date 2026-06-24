@@ -20,8 +20,6 @@ from config_platform_api.models.enums import ConnectionType
 
 logger = get_logger(__name__)
 
-P12_AUTH_METHODS = frozenset({"sql_login", "windows_integrated", "windows_login"})
-
 
 class MssqlOnPremConnector(BaseConnector):
     connector_id = "mssql_onprem"
@@ -49,11 +47,6 @@ class MssqlOnPremConnector(BaseConnector):
 
     def test_connect(self, payload: dict[str, Any]) -> ConnectorTestResult:
         validated = self.validate(payload)
-        if validated["auth_method"] not in P12_AUTH_METHODS:
-            return ConnectorTestResult(
-                False,
-                f"Authentication '{validated['auth_method']}' is available in P1.4.",
-            )
         engine: Engine | None = None
         try:
             engine = self._create_engine_from_validated(validated, connect_timeout=5)
@@ -92,7 +85,7 @@ class MssqlOnPremConnector(BaseConnector):
             exported["connection_string"] = (
                 f"sqlserver://{validated['host']}:{validated['port']}/{validated['database']}"
             )
-        else:
+        elif validated["auth_method"] in {"windows_login", "ntlm"}:
             exported["connection_string"] = (
                 f"sqlserver://{validated['domain']}\\\\{validated['username']}@"
                 f"{validated['host']}:{validated['port']}/{validated['database']}"
@@ -103,10 +96,6 @@ class MssqlOnPremConnector(BaseConnector):
 
     def create_engine(self, payload: dict[str, Any]) -> Engine:
         validated = self.validate(payload)
-        if validated["auth_method"] not in P12_AUTH_METHODS:
-            raise ConnectorValidationError(
-                f"Introspection for '{validated['auth_method']}' is available in a later phase."
-            )
         return self._create_engine_from_validated(validated)
 
     def build_summary(self, payload: dict[str, Any]) -> str:
