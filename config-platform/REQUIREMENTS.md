@@ -1,6 +1,6 @@
 # Config Platform — Requirements (v1)
 
-**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P4 done; P5 next.  
+**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P5 done; P6 next.  
 **Product:** `config-platform/` (UI + API)  
 **Based on:** Original UI toolkit ideas (refined and aligned with script-generator contract)  
 **Related:** [../docs/INTEGRATION.md](../docs/INTEGRATION.md) · [../docs/sampleConfigfile.json](../docs/sampleConfigfile.json) · [../script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md)
@@ -947,7 +947,7 @@ You asked when to validate — direct mappings need little; expressions need eng
 | File upload | `POST /connections/{ref}/files/upload` | Size-capped staging (OQ-12; P3.5) |
 | Target DDL | `POST /connections/{ref}/tables/copy-structure` | For `unprocessed_table` (P6) |
 | Export | `GET /migrations/{id}/export` | Produces contract JSON |
-| Validate proxy | `POST /migrations/{id}/validate` | Forwards to script-generator (P5) |
+| Validate proxy | `POST /migrations/{id}/validate` | Forwards assembled export JSON to script-generator `/validate` (embedded fallback in monorepo dev) |
 
 Frontend **never** calls script-generator directly (per [INTEGRATION.md](../docs/INTEGRATION.md)).
 
@@ -1165,11 +1165,11 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 ### Phase P5 — Review + validate proxy + JSON download
 
-- [ ] `POST /migrations/{id}/validate` — proxy to script-generator
-- [ ] Migration Review UI — full migration summary (all blueprints)
-- [ ] L3 full validation before download (OQ-1)
-- [ ] **Download JSON** disabled until validation passes
-- [ ] Validation errors with `code`, `path`, `blueprint_sequence`
+- [x] `POST /migrations/{id}/validate` — proxy to script-generator (embedded monorepo fallback when `CONFIG_API_SCRIPT_GENERATOR_URL` unset)
+- [x] Migration Review UI — full migration summary (all blueprints)
+- [x] L3 full validation before download (OQ-1)
+- [x] **Download JSON** disabled until validation passes
+- [x] Validation errors with `code`, `path`, `blueprint_sequence`
 
 **Exit criteria:** Invalid configs cannot download; valid configs export clean JSON.
 
@@ -1217,7 +1217,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - **P1.5 vs P3.5:** **P1.5** = `local_csv` connector (Connect UI, test, export). **P3.5** = blueprint **B1** SchemaTree + file pickers. Same feature; two exit checks.
 - **P3.5** can start after P3 B1 is in progress; migrator streaming (P9) can trail config export.
-- **Recommended next build:** **P5** (validate proxy + download gate).
+- **Recommended next build:** **P6** (unprocessed/audit table DDL helpers).
 
 ### 11.1 Phase summary (quick view)
 
@@ -1230,7 +1230,8 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 | **P3** | [x] Complete | B1–B5 wizard forms + API persist; L2 expression validate deferred to P5 |
 | **P3.5** | [x] Complete | B1/B3 file source wiring; wizard upload widget optional polish |
 | **P4** | [x] Complete | `GET /migrations/{id}/export` + preview/download UI |
-| **P5–P9** | [ ] Not started | Validate, DDL, migrator handoff |
+| **P5** | [x] Complete | Validate proxy, review UI, download gate |
+| **P6–P9** | [ ] Not started | DDL helpers, migrator handoff |
 
 ### 11.2 v1 sign-off checklist
 
@@ -1240,8 +1241,8 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 - [x] Multiple blueprints per migration (add / duplicate / reorder / delete)
 - [x] Full blueprint wizard B1–B5 edits persisted to API
 - [x] `LOCAL_CSV` path + upload (P1.5); [x] wizard file pickers (P3.5 / B1)
-- [ ] Export JSON matches [sampleConfigfile.json](../docs/sampleConfigfile.json)
-- [ ] Validate-before-download enforced (OQ-1)
+- [x] Export JSON matches [sampleConfigfile.json](../docs/sampleConfigfile.json) shape (assembler + L3 validate gate)
+- [x] Validate-before-download enforced (OQ-1)
 - [x] All five `on_conflict` strategies in B2 UI
 - [x] Introspection for DB + S3 + local CSV sample columns (Connect + `SchemaTree` preview; wizard pickers = P3.5)
 - [ ] Test connection required before save (all connectors)

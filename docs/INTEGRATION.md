@@ -58,6 +58,7 @@ Base URL example: `http://localhost:8001`
 
 | Method | Path | Request | Response |
 |--------|------|---------|----------|
+| `GET` | `/health` | — | `{ "status": "ok" }` |
 | `POST` | `/validate` | Migration config JSON body | Validation report JSON |
 | `POST` | `/generate` | Migration config JSON body | SQL script text or file download |
 
@@ -80,9 +81,9 @@ Base URL example: `http://localhost:8000`
 | Area | Purpose |
 |------|---------|
 | Blueprint CRUD | Save/load draft migrations per client |
-| Migration export | `GET /migrations/{id}/export` — contract JSON (`?download=true` for attachment) |
+| Migration export | `GET /migrations/{id}/export` — contract JSON (`?download=true` requires validation pass) |
 | Connections export | `GET /connections/export` — per-connection contract fragments |
-| Proxy | Forward validate/generate to script generator API |
+| Validate proxy | `POST /migrations/{id}/validate` — forwards export JSON to script-generator `POST /validate` |
 
 Frontend (`config-platform/web/`) talks **only** to config API — never directly to script generator or migrator.
 

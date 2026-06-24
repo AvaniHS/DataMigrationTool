@@ -20,7 +20,7 @@ import type { MigrationRecord } from "@/components/migrations/types";
 import { ErrorAlertWithRetry } from "@/components/shared/ErrorAlertWithRetry";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { SchemaTree } from "@/components/shared/SchemaTree";
-import { MigrationExportPanel } from "@/components/config_wizard/MigrationExportPanel";
+import { MigrationReviewPanel } from "@/components/config_wizard/MigrationReviewPanel";
 import { useMigrations } from "@/hooks/useMigrations";
 
 export function MigrationDetailView() {
@@ -295,7 +295,7 @@ export function MigrationDetailView() {
         )}
 
         <Paper variant="outlined" sx={{ p: 1.5 }}>
-          <MigrationExportPanel migrationId={migration.migration_id} />
+          <MigrationReviewPanel migration={migration} />
         </Paper>
       </Stack>
     </>

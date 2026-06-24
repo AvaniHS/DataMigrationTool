@@ -12,8 +12,9 @@ from migration_engine.logging.structured_logger import get_logger
 from migration_engine.models import MasterMigrationBlueprint
 from migration_engine.models.enums import DialectType
 from migration_engine.parsers.blueprint_parser import BlueprintParseError, BlueprintParser
-from migration_engine.validators.migration_config_validator import MigrationConfigValidator
 from migration_engine.validators.report_writer import write_validation_report
+from migration_engine.validators.validation_result import ValidationIssue, ValidationReport
+from migration_engine.validation_service import validate_migration_payload
 
 app = typer.Typer(
     name="migration-engine",
@@ -27,6 +28,25 @@ EXIT_SUCCESS = 0
 EXIT_VALIDATION_FAILURE = 1
 EXIT_PARSE_FAILURE = 2
 EXIT_COMPILATION_FAILURE = 2
+
+
+def _report_from_dict(report_dict: dict) -> ValidationReport:
+    report = ValidationReport(
+        migration_id=str(report_dict.get("migration_id", "unknown")),
+        is_valid=bool(report_dict.get("is_valid", False)),
+    )
+    for issue in report_dict.get("issues", []):
+        report.issues.append(
+            ValidationIssue(
+                code=str(issue.get("code", "VALIDATION_ERROR")),
+                message=str(issue.get("message", "")),
+                path=str(issue.get("path", "")),
+                blueprint_sequence=issue.get("blueprint_sequence"),
+            )
+        )
+    if report.issues:
+        report.is_valid = False
+    return report
 
 
 def _resolve_config_path(config: Path) -> Path:
@@ -75,11 +95,16 @@ def validate_command(
 ) -> None:
     """Validate a migration blueprint configuration file."""
     config_path = _resolve_config_path(config)
-    migration = _load_migration_config(config_path)
     dialect_type = _parse_dialect(dialect)
+    try:
+        payload = json.loads(config_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        logger.error("parse_failed", error=str(exc), config=str(config_path))
+        typer.echo(f"Parse error: {exc}", err=True)
+        raise typer.Exit(EXIT_PARSE_FAILURE) from exc
 
-    validator = MigrationConfigValidator(compile_dialect=dialect_type)
-    report = validator.validate(migration)
+    report_dict = validate_migration_payload(payload, dialect=dialect_type)
+    report = _report_from_dict(report_dict)
 
     typer.echo(report.format_summary())
     typer.echo(json.dumps(report.to_dict(), indent=2))
@@ -91,14 +116,13 @@ def validate_command(
     if report.is_valid:
         logger.info(
             "validation_succeeded",
-            migration_id=migration.migration_id,
-            blueprint_count=len(migration.blueprints),
+            migration_id=report.migration_id,
         )
         raise typer.Exit(EXIT_SUCCESS)
 
     logger.warning(
         "validation_failed",
-        migration_id=migration.migration_id,
+        migration_id=report.migration_id,
         issue_count=len(report.issues),
     )
     raise typer.Exit(EXIT_VALIDATION_FAILURE)

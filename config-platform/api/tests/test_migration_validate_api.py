@@ -1,4 +1,4 @@
-"""API tests for migration export endpoint."""
+"""Tests for migration validation proxy."""
 
 from datetime import UTC, datetime
 from pathlib import Path
@@ -38,7 +38,7 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     app.dependency_overrides.clear()
 
 
-def _seed_migration_with_connection(
+def _seed_valid_migration(
     connection_store: ConnectionStore,
     migration_store: MigrationStore,
 ) -> str:
@@ -61,14 +61,14 @@ def _seed_migration_with_connection(
     )
     migration_store.create(
         CreateMigrationRequest(
-            migration_id="mig_export_api",
+            migration_id="mig_validate_api",
             client_id="client_acme",
             version="1.0.0",
             output_format="SQL",
         ),
     )
     migration_store.update(
-        "mig_export_api",
+        "mig_validate_api",
         UpdateMigrationRequest(
             client_id="client_acme",
             version="1.0.0",
@@ -104,44 +104,34 @@ def _seed_migration_with_connection(
             ],
         ),
     )
-    return "mig_export_api"
+    return "mig_validate_api"
 
 
-def test_migration_export_endpoint(client: TestClient) -> None:
+def test_validate_migration_returns_issues_shape(client: TestClient) -> None:
     connection_store: ConnectionStore = app.dependency_overrides[get_connection_store]()
     migration_store: MigrationStore = app.dependency_overrides[get_migration_store]()
-    migration_id = _seed_migration_with_connection(connection_store, migration_store)
+    migration_id = _seed_valid_migration(connection_store, migration_store)
 
-    response = client.get(f"/migrations/{migration_id}/export")
+    response = client.post(f"/migrations/{migration_id}/validate")
     assert response.status_code == 200
     payload = response.json()
     assert payload["migration_id"] == migration_id
-    assert payload["connections"]["client_crm_mysql"]["auth_method"] == "password"
-    assert payload["blueprints"][0]["target"]["table_name"] == "customers"
+    assert "is_valid" in payload
+    assert "issues" in payload
 
 
-def test_migration_export_download_sets_attachment_header(client: TestClient) -> None:
-    connection_store: ConnectionStore = app.dependency_overrides[get_connection_store]()
-    migration_store: MigrationStore = app.dependency_overrides[get_migration_store]()
-    migration_id = _seed_migration_with_connection(connection_store, migration_store)
-
-    response = client.get(f"/migrations/{migration_id}/export", params={"download": True})
-    assert response.status_code == 200
-    assert "attachment" in response.headers.get("content-disposition", "")
-
-
-def test_migration_export_missing_connection_returns_422(client: TestClient) -> None:
+def test_download_export_blocked_when_invalid(client: TestClient) -> None:
     migration_store: MigrationStore = app.dependency_overrides[get_migration_store]()
     migration_store.create(
         CreateMigrationRequest(
-            migration_id="mig_missing_conn",
+            migration_id="mig_invalid_download",
             client_id="client_acme",
             version="1.0.0",
             output_format="SQL",
         ),
     )
     migration_store.update(
-        "mig_missing_conn",
+        "mig_invalid_download",
         UpdateMigrationRequest(
             client_id="client_acme",
             version="1.0.0",
@@ -155,5 +145,5 @@ def test_migration_export_missing_connection_returns_422(client: TestClient) -> 
         ),
     )
 
-    response = client.get("/migrations/mig_missing_conn/export")
+    response = client.get("/migrations/mig_invalid_download/export", params={"download": True})
     assert response.status_code == 422

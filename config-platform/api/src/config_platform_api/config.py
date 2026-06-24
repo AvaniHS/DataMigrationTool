@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     staging_ttl_days: int = 30
     verification_ttl_seconds: int = 900
     use_mock_introspection: bool = False
+    script_generator_url: str | None = None
+    validation_timeout_seconds: int = 30
 
     def resolved_file_roots(self) -> list[Path]:
         return [Path(root).expanduser().resolve(strict=False) for root in self.file_roots]

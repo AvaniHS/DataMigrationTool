@@ -9,7 +9,13 @@ from config_platform_api.models.migrations import (
     ReorderBlueprintsRequest,
     UpdateMigrationRequest,
 )
+from config_platform_api.models.validation import ValidationReportResponse
 from config_platform_api.services.migration_export import MigrationExportError, assemble_migration_export
+from config_platform_api.services.validation_client import (
+    ValidationServiceError,
+    to_validation_report_response,
+    validate_migration_export,
+)
 from config_platform_api.services.staging_cleanup import (
     cleanup_staging_for_connection_refs,
     connection_refs_in_migration,
@@ -69,6 +75,12 @@ def export_migration(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
     if download:
+        report = validate_migration_export(payload)
+        if not report.get("is_valid"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Migration failed validation. Resolve validation issues before downloading JSON.",
+            )
         return JSONResponse(
             content=payload,
             media_type="application/json",
@@ -77,6 +89,26 @@ def export_migration(
             },
         )
     return payload
+
+
+@router.post("/{migration_id}/validate", response_model=ValidationReportResponse)
+def validate_migration(
+    migration_id: str,
+    migration_store: MigrationStore = Depends(get_migration_store),
+    connection_store: ConnectionStore = Depends(get_connection_store),
+) -> ValidationReportResponse:
+    try:
+        migration = migration_store.get(migration_id)
+        export_payload = assemble_migration_export(migration, connection_store)
+        report = validate_migration_export(export_payload)
+    except MigrationNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except MigrationExportError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except ValidationServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+
+    return ValidationReportResponse.model_validate(to_validation_report_response(report))
 
 
 @router.put("/{migration_id}", response_model=MigrationRecord)
