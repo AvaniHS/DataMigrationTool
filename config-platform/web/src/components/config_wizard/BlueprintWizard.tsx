@@ -6,17 +6,26 @@ import { BlueprintWizardLayoutSidebar } from "./BlueprintWizardLayoutSidebar";
 import { BLUEPRINT_WIZARD_STEPS } from "./types";
 import { WizardStepMock } from "./WizardStepMock";
 import { useWizardStepIndex } from "@/hooks/useWizardStepIndex";
-import type { MockMigration } from "@/mock/sampleData";
-import { SAMPLE_MOCK_MIGRATION } from "@/mock/sampleData";
 
 type BlueprintWizardProps = {
-  migration?: MockMigration;
+  migrationId: string;
+  clientId: string;
+  version: string;
+  blueprintSequence: number;
+  blueprintName: string;
 };
 
-export function BlueprintWizard({ migration = SAMPLE_MOCK_MIGRATION }: BlueprintWizardProps) {
+export function BlueprintWizard({
+  migrationId,
+  clientId,
+  version,
+  blueprintSequence,
+  blueprintName,
+}: BlueprintWizardProps) {
   const steps = BLUEPRINT_WIZARD_STEPS;
   const [activeStepIndex, setActiveStepIndex] = useWizardStepIndex(
-    migration.migrationId,
+    migrationId,
+    blueprintSequence,
     steps.length,
   );
   const activeStep = steps[activeStepIndex];
@@ -27,10 +36,10 @@ export function BlueprintWizard({ migration = SAMPLE_MOCK_MIGRATION }: Blueprint
     <Box>
       <Box sx={{ mb: 1.5 }}>
         <Typography variant="subtitle1" fontWeight={600}>
-          Blueprint {migration.blueprintSequence}: {migration.blueprintName}
+          Blueprint {blueprintSequence}: {blueprintName}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {migration.migrationId} · {migration.clientId} v{migration.version}
+          {migrationId} · {clientId} v{version}
         </Typography>
       </Box>
 

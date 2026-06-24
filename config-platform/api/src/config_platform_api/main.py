@@ -3,10 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config_platform_api.config import get_settings
-from config_platform_api.exceptions import ConnectionStoreError
+from config_platform_api.exceptions import ConnectionStoreError, MigrationStoreError
 from config_platform_api.logging_setup import configure_logging, get_logger
 from config_platform_api.middleware.request_logging import RequestLoggingMiddleware
-from config_platform_api.routers import connections, health
+from config_platform_api.routers import connections, health, introspection, migrations
 from config_platform_api.services.connection_builder import ConnectionValidationError
 
 configure_logging()
@@ -24,6 +24,8 @@ app.add_middleware(
 )
 app.include_router(health.router)
 app.include_router(connections.router)
+app.include_router(introspection.router)
+app.include_router(migrations.router)
 
 
 @app.exception_handler(ConnectionStoreError)
@@ -35,6 +37,18 @@ async def connection_store_error_handler(
     return JSONResponse(
         status_code=500,
         content={"detail": "Connection registry is unavailable."},
+    )
+
+
+@app.exception_handler(MigrationStoreError)
+async def migration_store_error_handler(
+    _request: Request,
+    exc: MigrationStoreError,
+) -> JSONResponse:
+    logger.error("migration_store_error", detail=str(exc))
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Migration registry is unavailable."},
     )
 
 

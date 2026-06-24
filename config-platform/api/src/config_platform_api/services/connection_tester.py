@@ -1,17 +1,20 @@
 """Test connectivity for supported connection types."""
 
 from dataclasses import dataclass
-from urllib.parse import urlparse
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine, URL, make_url
+from sqlalchemy.engine import Engine
+from urllib.parse import urlparse
 
 from config_platform_api.logging_setup import get_logger
 from config_platform_api.models.connections import ConnectionTestRequest, DatabaseConnectionFields
 from config_platform_api.models.enums import ConnectionType
-from config_platform_api.services.connection_builder import build_database_connection_string
+from config_platform_api.services.connection_engine import (
+    create_database_engine,
+    dispose_engine,
+    verify_database_connection,
+)
 
 logger = get_logger(__name__)
 
@@ -35,13 +38,10 @@ def test_connection(request: ConnectionTestRequest) -> TestResult:
 
 
 def _test_database(connection_type: ConnectionType, fields: DatabaseConnectionFields) -> TestResult:
-    connection_string = build_database_connection_string(connection_type, fields)
     engine: Engine | None = None
     try:
-        url = _to_sqlalchemy_url(connection_type, connection_string)
-        engine = create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": 5})
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
+        engine = create_database_engine(connection_type, fields, connect_timeout=5)
+        verify_database_connection(engine)
         summary = f"{fields.host}:{fields.port}/{fields.database}"
         return TestResult(True, f"Connected successfully to {summary}.")
     except Exception as exc:
@@ -55,36 +55,7 @@ def _test_database(connection_type: ConnectionType, fields: DatabaseConnectionFi
         )
         return TestResult(False, _sanitize_error(str(exc)))
     finally:
-        if engine is not None:
-            engine.dispose()
-
-
-def _to_sqlalchemy_url(connection_type: ConnectionType, connection_string: str) -> URL:
-    url = make_url(connection_string)
-    if connection_type == ConnectionType.MYSQL:
-        return url.set(drivername="mysql+pymysql")
-    if connection_type == ConnectionType.POSTGRESQL:
-        return url.set(drivername="postgresql+psycopg2")
-    if connection_type == ConnectionType.MSSQL:
-        return _mssql_sqlalchemy_url(url)
-    raise ValueError(f"Unsupported connection type: {connection_type}")
-
-
-def _mssql_sqlalchemy_url(url: URL) -> URL:
-    host = url.host or "localhost"
-    port = url.port or 1433
-    database = (url.database or "").lstrip("/")
-    username = url.username or ""
-    password = url.password or ""
-    odbc_connect = (
-        f"DRIVER={{ODBC Driver 18 for SQL Server}};"
-        f"SERVER={host},{port};"
-        f"DATABASE={database};"
-        f"UID={username};"
-        f"PWD={password};"
-        f"TrustServerCertificate=yes;"
-    )
-    return URL.create("mssql+pyodbc", query={"odbc_connect": odbc_connect})
+        dispose_engine(engine)
 
 
 def _test_s3(s3_bucket_uri: str, aws_region: str) -> TestResult:

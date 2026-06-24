@@ -13,4 +13,12 @@ export default meta;
 
 type Story = StoryObj<typeof BlueprintWizard>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  args: {
+    migrationId: "mig_multi_server_enterprise_2026",
+    clientId: "client_global_retail_corp",
+    version: "1.0.0",
+    blueprintSequence: 1,
+    blueprintName: "core.customers",
+  },
+};

@@ -1,8 +1,16 @@
 import { buildDraftKey } from "@/storage/localDraft";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 
-export function useWizardStepIndex(migrationId: string, stepCount: number) {
-  const storageKey = buildDraftKey(`wizard-step:${migrationId}`);
+export function buildWizardStepDraftKey(migrationId: string, blueprintSequence: number): string {
+  return buildDraftKey(`wizard-step:${migrationId}:${blueprintSequence}`);
+}
+
+export function useWizardStepIndex(
+  migrationId: string,
+  blueprintSequence: number,
+  stepCount: number,
+) {
+  const storageKey = buildWizardStepDraftKey(migrationId, blueprintSequence);
   const [activeStepIndex, setActiveStepIndex] = useLocalDraft(storageKey, 0);
 
   const setStepIndex = (nextIndex: number) => {
