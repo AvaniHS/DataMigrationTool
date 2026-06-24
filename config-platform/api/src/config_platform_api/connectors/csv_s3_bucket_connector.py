@@ -43,12 +43,12 @@ class CsvS3BucketConnector(BaseConnector):
 
     def test_connect(self, payload: dict[str, Any]) -> ConnectorTestResult:
         validated = self.validate(payload)
-        if validated["auth_method"] != "access_key":
-            return ConnectorTestResult(
-                False,
-                f"Authentication '{validated['auth_method']}' is available in P1.4.",
-            )
-        return _test_s3_bucket(validated["s3_bucket_uri"], validated["aws_region"])
+        return _test_s3_bucket(
+            validated["s3_bucket_uri"],
+            validated["aws_region"],
+            validated["access_key_id"],
+            validated["secret_access_key"],
+        )
 
     def build_export(self, payload: dict[str, Any], *, secret_ref: str | None = None) -> dict[str, Any]:
         validated = self.validate(payload)
@@ -57,9 +57,12 @@ class CsvS3BucketConnector(BaseConnector):
             "auth_method": validated["auth_method"],
             "s3_bucket_uri": validated["s3_bucket_uri"],
             "aws_region": validated["aws_region"],
+            "access_key_id": validated["access_key_id"],
         }
         if secret_ref is not None:
             exported["secret_ref"] = secret_ref
+        else:
+            exported["secret_access_key"] = validated["secret_access_key"]
         return exported
 
     def build_summary(self, payload: dict[str, Any]) -> str:
@@ -67,7 +70,12 @@ class CsvS3BucketConnector(BaseConnector):
         return validated["s3_bucket_uri"]
 
 
-def _test_s3_bucket(s3_bucket_uri: str, aws_region: str) -> ConnectorTestResult:
+def _test_s3_bucket(
+    s3_bucket_uri: str,
+    aws_region: str,
+    access_key_id: str,
+    secret_access_key: str,
+) -> ConnectorTestResult:
     parsed = urlparse(s3_bucket_uri)
     bucket = parsed.netloc
     prefix = parsed.path.lstrip("/")
@@ -75,7 +83,12 @@ def _test_s3_bucket(s3_bucket_uri: str, aws_region: str) -> ConnectorTestResult:
         return ConnectorTestResult(False, "S3 bucket URI must include a bucket name.")
 
     try:
-        client = boto3.client("s3", region_name=aws_region)
+        client = boto3.client(
+            "s3",
+            region_name=aws_region,
+            aws_access_key_id=access_key_id,
+            aws_secret_access_key=secret_access_key,
+        )
         client.head_bucket(Bucket=bucket)
         if prefix:
             client.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=1)

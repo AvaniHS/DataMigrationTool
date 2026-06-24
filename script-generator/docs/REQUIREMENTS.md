@@ -92,6 +92,21 @@ Top-level fields (from sample + extensions):
 
 > `output_format` is a new top-level field for `ScriptGeneratorFactory` (default: `SQL`).
 
+**Connections (P1.2+ extended contract)** — synced with [config-platform REQUIREMENTS](../../config-platform/REQUIREMENTS.md) §7.2.10 and [sampleConfigfile.json](../../docs/sampleConfigfile.json):
+
+| Field | Database connections | S3 (`CSV_S3_BUCKET`) |
+|-------|---------------------|----------------------|
+| `type` | Required | Required |
+| `connection_string` | Required (MYSQL / MSSQL / POSTGRESQL) | — |
+| `auth_method` | Optional (P1.2+) | Optional (`access_key`, …) |
+| `driver_options` | Optional (`sslmode`, `ssl_enabled`, `encrypt`, …) | — |
+| `s3_bucket_uri`, `aws_region` | — | Required |
+| `access_key_id` | — | Optional (P1.2+) |
+| `entra` | Optional (`tenant_id`, `client_id` for Entra SP) | — |
+| `secret_ref` | Optional vault pointer | Optional |
+
+**Parser rule:** Models must accept P1.2 fields so exported configs validate. **Compiler rule (v1):** bootstrap may continue to read `connection_string` / S3 URI until auth-aware preamble is implemented; full `auth_method` handling is **migrator** + future bootstrap work (config-platform OQ-21).
+
 Each **blueprint** (`sequence_order` ordered):
 
 | Block | Purpose |
@@ -764,6 +779,17 @@ Exit codes: `0` success, `1` validation failure, `2` compilation failure.
 - [x] Error message polish; validation report JSON export
 
 **Exit criteria:** Codebase ready for Phase C without structural refactor.
+
+### Phase 7.5 — P1.2 connection contract sync (cross-product)
+
+Triggered when [config-platform](../../config-platform/REQUIREMENTS.md) P1.2 extends [sampleConfigfile.json](../../docs/sampleConfigfile.json) with `auth_method`, `driver_options`, and related fields.
+
+- [ ] Extend `DatabaseConnection` / `CsvS3Connection` in `models/connection.py` — optional `auth_method`, `driver_options`, `entra`, `secret_ref`; S3 `access_key_id` (remove `extra="forbid"` breakage on new keys)
+- [ ] `BlueprintParser` + unit tests: [sampleConfigfile.json](../../docs/sampleConfigfile.json) validates and generates without parse errors
+- [ ] Document: compilation still uses `connection_string` / S3 URI for bootstrap until auth-aware preamble (Entra, Windows, explicit S3 keys) is a separate phase
+- [ ] Golden tests updated only if SQL output changes (not expected for parse-only sync)
+
+**Exit criteria:** `validate` and `generate` succeed on P1.2-shaped sample config; no regression on configs that omit the new optional fields.
 
 ### Phase 8 — Future (Phase C — when requested)
 

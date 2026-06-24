@@ -9,7 +9,7 @@ from config_platform_api.connectors.base import BaseConnector, ConnectorTestResu
 from config_platform_api.connectors.payloads import MysqlConnectorPayload, sql_fields_from_dict
 from config_platform_api.connectors.sql_helpers import (
     build_sql_connection_string,
-    create_sql_engine,
+    create_mysql_engine,
     dispose_sql_engine,
     sanitize_connection_error,
     verify_sql_engine,
@@ -42,12 +42,14 @@ class MysqlConnector(BaseConnector):
 
     def test_connect(self, payload: dict[str, Any]) -> ConnectorTestResult:
         validated = self.validate(payload)
-        if validated["auth_method"] != "password":
-            return ConnectorTestResult(False, "This authentication method is available in P1.2.")
         engine: Engine | None = None
         try:
             fields = sql_fields_from_dict(validated)
-            engine = create_sql_engine(ConnectionType.MYSQL, fields, connect_timeout=5)
+            engine = create_mysql_engine(
+                fields,
+                ssl_enabled=validated.get("ssl_enabled", False),
+                connect_timeout=5,
+            )
             verify_sql_engine(engine)
             summary = f"{validated['host']}:{validated['port']}/{validated['database']}"
             return ConnectorTestResult(True, f"Connected successfully to {summary}.")
@@ -70,6 +72,7 @@ class MysqlConnector(BaseConnector):
             "type": self.export_type,
             "auth_method": validated["auth_method"],
             "connection_string": build_sql_connection_string(ConnectionType.MYSQL, fields),
+            "driver_options": {"ssl_enabled": validated.get("ssl_enabled", False)},
         }
         if secret_ref is not None:
             exported["secret_ref"] = secret_ref
@@ -78,7 +81,7 @@ class MysqlConnector(BaseConnector):
     def create_engine(self, payload: dict[str, Any]) -> Engine:
         validated = self.validate(payload)
         fields = sql_fields_from_dict(validated)
-        return create_sql_engine(ConnectionType.MYSQL, fields)
+        return create_mysql_engine(fields, ssl_enabled=validated.get("ssl_enabled", False))
 
     def build_summary(self, payload: dict[str, Any]) -> str:
         validated = self.validate(payload)

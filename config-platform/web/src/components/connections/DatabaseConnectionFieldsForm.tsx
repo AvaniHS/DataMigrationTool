@@ -7,9 +7,16 @@ import type { SqlDatabaseFields } from "@/components/connections/types";
 type DatabaseConnectionFieldsFormProps = {
   value: SqlDatabaseFields;
   onChange: (nextValue: SqlDatabaseFields) => void;
+  hideCredentials?: boolean;
+  requireCredentials?: boolean;
 };
 
-export function DatabaseConnectionFieldsForm({ value, onChange }: DatabaseConnectionFieldsFormProps) {
+export function DatabaseConnectionFieldsForm({
+  value,
+  onChange,
+  hideCredentials = false,
+  requireCredentials = true,
+}: DatabaseConnectionFieldsFormProps) {
   const update = (patch: Partial<SqlDatabaseFields>) => {
     onChange({ ...value, ...patch });
   };
@@ -38,20 +45,25 @@ export function DatabaseConnectionFieldsForm({ value, onChange }: DatabaseConnec
         onChange={(event) => update({ database: event.target.value })}
         required
       />
-      <TextField
-        size="small"
-        label="Username"
-        value={value.username}
-        onChange={(event) => update({ username: event.target.value })}
-        required
-      />
-      <TextField
-        size="small"
-        label="Password"
-        type="password"
-        value={value.password}
-        onChange={(event) => update({ password: event.target.value })}
-      />
+      {!hideCredentials && (
+        <>
+          <TextField
+            size="small"
+            label="Username"
+            value={value.username}
+            onChange={(event) => update({ username: event.target.value })}
+            required={requireCredentials}
+          />
+          <TextField
+            size="small"
+            label="Password"
+            type="password"
+            value={value.password}
+            onChange={(event) => update({ password: event.target.value })}
+            required={requireCredentials}
+          />
+        </>
+      )}
       <FormControlLabel
         control={
           <Switch

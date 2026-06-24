@@ -7,24 +7,43 @@
   "connections": {
     "target_production_system": {
       "type": "POSTGRESQL",
-      "connection_string": "postgresql://app_arch:secure_pass@cloud-cluster:5432/core_erp"
+      "auth_method": "password",
+      "connection_string": "postgresql://app_arch:secure_pass@cloud-cluster:5432/core_erp",
+      "driver_options": {
+        "sslmode": "require"
+      }
     },
     "client_crm_mysql": {
       "type": "MYSQL",
-      "connection_string": "mysql://read_user:pass@client-crm-ip:3306/crm_db"
+      "auth_method": "password",
+      "connection_string": "mysql://read_user:pass@client-crm-ip:3306/crm_db",
+      "driver_options": {
+        "ssl_enabled": false
+      }
     },
     "client_billing_mssql": {
       "type": "MSSQL",
-      "connection_string": "sqlserver://read_user:pass@client-billing-ip:1433/finance_db"
+      "auth_method": "sql_login",
+      "connection_string": "sqlserver://read_user:pass@client-billing-ip:1433/finance_db",
+      "driver_options": {
+        "encrypt": true,
+        "trust_server_certificate": false
+      }
     },
     "client_archival_s3": {
       "type": "CSV_S3_BUCKET",
+      "auth_method": "access_key",
       "s3_bucket_uri": "s3://client-migration-dump/historical_archives/",
-      "aws_region": "us-west-2"
+      "aws_region": "us-west-2",
+      "access_key_id": "AKIAEXAMPLE"
     },
     "client_pos_logs": {
       "type": "POSTGRESQL",
-      "connection_string": "postgresql://pos_viewer:pass@client-pos-ip:5432/retail_logs"
+      "auth_method": "password",
+      "connection_string": "postgresql://pos_viewer:pass@client-pos-ip:5432/retail_logs",
+      "driver_options": {
+        "sslmode": "prefer"
+      }
     }
   },
 

@@ -5,9 +5,14 @@ import type { S3BucketFields } from "@/components/connections/types";
 type S3ConnectionFieldsFormProps = {
   value: S3BucketFields;
   onChange: (nextValue: S3BucketFields) => void;
+  showAccessKeys?: boolean;
 };
 
-export function S3ConnectionFieldsForm({ value, onChange }: S3ConnectionFieldsFormProps) {
+export function S3ConnectionFieldsForm({
+  value,
+  onChange,
+  showAccessKeys = true,
+}: S3ConnectionFieldsFormProps) {
   return (
     <Stack spacing={1.5}>
       <TextField
@@ -25,6 +30,25 @@ export function S3ConnectionFieldsForm({ value, onChange }: S3ConnectionFieldsFo
         onChange={(event) => onChange({ ...value, aws_region: event.target.value })}
         required
       />
+      {showAccessKeys && (
+        <>
+          <TextField
+            size="small"
+            label="Access key ID"
+            value={value.access_key_id}
+            onChange={(event) => onChange({ ...value, access_key_id: event.target.value })}
+            required
+          />
+          <TextField
+            size="small"
+            label="Secret access key"
+            type="password"
+            value={value.secret_access_key}
+            onChange={(event) => onChange({ ...value, secret_access_key: event.target.value })}
+            required
+          />
+        </>
+      )}
     </Stack>
   );
 }

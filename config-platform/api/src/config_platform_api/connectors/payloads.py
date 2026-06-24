@@ -1,8 +1,8 @@
 """Shared connector payload models."""
 
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class _StrictModel(BaseModel):
@@ -31,6 +31,7 @@ class MysqlConnectorPayload(_StrictModel):
     database: str = Field(min_length=1)
     username: str = Field(min_length=1)
     password: str = ""
+    ssl_enabled: bool = False
     use_advanced_string: bool = False
     connection_string: str | None = None
 
@@ -42,7 +43,7 @@ class PostgresqlConnectorPayload(_StrictModel):
     database: str = Field(min_length=1)
     username: str = Field(min_length=1)
     password: str = ""
-    sslmode: str = "prefer"
+    sslmode: Literal["disable", "allow", "prefer", "require", "verify-ca", "verify-full"] = "prefer"
     use_advanced_string: bool = False
     connection_string: str | None = None
 
@@ -55,8 +56,23 @@ class MssqlOnPremPayload(_StrictModel):
     username: str = ""
     password: str = ""
     domain: str = ""
+    encrypt: bool = True
+    trust_server_certificate: bool = False
     use_advanced_string: bool = False
     connection_string: str | None = None
+
+    @model_validator(mode="after")
+    def validate_auth_fields(self) -> Self:
+        if self.auth_method == "ntlm":
+            raise ValueError("ntlm auth is available in P1.4.")
+        if self.auth_method == "sql_login" and not self.username:
+            raise ValueError("username is required for sql_login")
+        if self.auth_method == "windows_login":
+            if not self.username:
+                raise ValueError("username is required for windows_login")
+            if not self.domain:
+                raise ValueError("domain is required for windows_login")
+        return self
 
 
 class AzureSqlDatabasePayload(_StrictModel):
@@ -73,8 +89,26 @@ class AzureSqlDatabasePayload(_StrictModel):
     tenant_id: str = ""
     client_id: str = ""
     client_secret: str = ""
+    encrypt: bool = True
+    trust_server_certificate: bool = False
     use_advanced_string: bool = False
     connection_string: str | None = None
+
+    @model_validator(mode="after")
+    def validate_auth_fields(self) -> Self:
+        if self.auth_method in {"entra_password", "entra_managed_identity"}:
+            raise ValueError(f"{self.auth_method} is available in P1.3.")
+        if self.auth_method == "sql_login":
+            if not self.username:
+                raise ValueError("username is required for sql_login")
+        if self.auth_method == "entra_service_principal":
+            if not self.tenant_id:
+                raise ValueError("tenant_id is required for entra_service_principal")
+            if not self.client_id:
+                raise ValueError("client_id is required for entra_service_principal")
+            if not self.client_secret:
+                raise ValueError("client_secret is required for entra_service_principal")
+        return self
 
 
 class S3BucketConnectorPayload(_StrictModel):
@@ -92,6 +126,16 @@ class S3BucketConnectorPayload(_StrictModel):
         if not value.startswith("s3://"):
             raise ValueError("S3 bucket URI must start with s3://")
         return value
+
+    @model_validator(mode="after")
+    def validate_auth_fields(self) -> Self:
+        if self.auth_method != "access_key":
+            raise ValueError(f"{self.auth_method} is available in P1.4.")
+        if not self.access_key_id:
+            raise ValueError("access_key_id is required for access_key auth")
+        if not self.secret_access_key:
+            raise ValueError("secret_access_key is required for access_key auth")
+        return self
 
 
 class LocalCsvConnectorPayload(_StrictModel):

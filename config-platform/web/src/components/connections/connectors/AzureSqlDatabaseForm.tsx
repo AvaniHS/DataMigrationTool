@@ -7,20 +7,21 @@ export function AzureSqlDatabaseForm({
   authMethod,
   sqlFields,
   azureServer,
+  azureEntra,
   onSqlFieldsChange,
   onAzureServerChange,
+  onAzureEntraChange,
 }: ConnectorFormProps) {
-  const update = (patch: Partial<typeof sqlFields>) => {
+  const updateSql = (patch: Partial<typeof sqlFields>) => {
     onSqlFieldsChange({ ...sqlFields, ...patch });
+  };
+
+  const updateEntra = (patch: Partial<typeof azureEntra>) => {
+    onAzureEntraChange({ ...azureEntra, ...patch });
   };
 
   return (
     <Stack spacing={1.5}>
-      {authMethod !== "sql_login" && (
-        <Alert severity="warning">
-          Entra authentication ships in P1.2/P1.3. Use SQL login for now.
-        </Alert>
-      )}
       <TextField
         size="small"
         label="Server"
@@ -33,23 +34,58 @@ export function AzureSqlDatabaseForm({
         size="small"
         label="Database"
         value={sqlFields.database}
-        onChange={(event) => update({ database: event.target.value })}
+        onChange={(event) => updateSql({ database: event.target.value })}
         required
       />
-      <TextField
-        size="small"
-        label="Username"
-        value={sqlFields.username}
-        onChange={(event) => update({ username: event.target.value })}
-        required
-      />
-      <TextField
-        size="small"
-        label="Password"
-        type="password"
-        value={sqlFields.password}
-        onChange={(event) => update({ password: event.target.value })}
-      />
+
+      {authMethod === "sql_login" && (
+        <>
+          <Alert severity="info" sx={{ py: 0.5 }}>
+            SQL login often uses <code>user@servername</code> as the username.
+          </Alert>
+          <TextField
+            size="small"
+            label="Username"
+            value={sqlFields.username}
+            onChange={(event) => updateSql({ username: event.target.value })}
+            required
+          />
+          <TextField
+            size="small"
+            label="Password"
+            type="password"
+            value={sqlFields.password}
+            onChange={(event) => updateSql({ password: event.target.value })}
+          />
+        </>
+      )}
+
+      {authMethod === "entra_service_principal" && (
+        <>
+          <TextField
+            size="small"
+            label="Tenant ID"
+            value={azureEntra.tenant_id}
+            onChange={(event) => updateEntra({ tenant_id: event.target.value })}
+            required
+          />
+          <TextField
+            size="small"
+            label="Client ID"
+            value={azureEntra.client_id}
+            onChange={(event) => updateEntra({ client_id: event.target.value })}
+            required
+          />
+          <TextField
+            size="small"
+            label="Client secret"
+            type="password"
+            value={azureEntra.client_secret}
+            onChange={(event) => updateEntra({ client_secret: event.target.value })}
+            required
+          />
+        </>
+      )}
     </Stack>
   );
 }

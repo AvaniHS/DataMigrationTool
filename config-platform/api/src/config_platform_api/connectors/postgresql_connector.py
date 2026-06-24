@@ -9,7 +9,7 @@ from config_platform_api.connectors.base import BaseConnector, ConnectorTestResu
 from config_platform_api.connectors.payloads import PostgresqlConnectorPayload, sql_fields_from_dict
 from config_platform_api.connectors.sql_helpers import (
     build_sql_connection_string,
-    create_sql_engine,
+    create_postgresql_engine,
     dispose_sql_engine,
     sanitize_connection_error,
     verify_sql_engine,
@@ -42,12 +42,14 @@ class PostgresqlConnector(BaseConnector):
 
     def test_connect(self, payload: dict[str, Any]) -> ConnectorTestResult:
         validated = self.validate(payload)
-        if validated["auth_method"] != "password":
-            return ConnectorTestResult(False, "This authentication method is available in P1.2.")
         engine: Engine | None = None
         try:
             fields = sql_fields_from_dict(validated)
-            engine = create_sql_engine(ConnectionType.POSTGRESQL, fields, connect_timeout=5)
+            engine = create_postgresql_engine(
+                fields,
+                sslmode=validated.get("sslmode", "prefer"),
+                connect_timeout=5,
+            )
             verify_sql_engine(engine)
             summary = f"{validated['host']}:{validated['port']}/{validated['database']}"
             return ConnectorTestResult(True, f"Connected successfully to {summary}.")
@@ -78,7 +80,10 @@ class PostgresqlConnector(BaseConnector):
 
     def create_engine(self, payload: dict[str, Any]) -> Engine:
         validated = self.validate(payload)
-        return create_sql_engine(ConnectionType.POSTGRESQL, sql_fields_from_dict(validated))
+        return create_postgresql_engine(
+            sql_fields_from_dict(validated),
+            sslmode=validated.get("sslmode", "prefer"),
+        )
 
     def build_summary(self, payload: dict[str, Any]) -> str:
         validated = self.validate(payload)

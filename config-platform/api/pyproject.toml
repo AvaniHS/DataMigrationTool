@@ -19,6 +19,7 @@ dependencies = [
     "psycopg2-binary>=2.9",
     "pyodbc>=5.0",
     "boto3>=1.35",
+    "azure-identity>=1.19",
 ]
 
 [project.optional-dependencies]

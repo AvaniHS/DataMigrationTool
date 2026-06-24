@@ -28,7 +28,32 @@ export type SqlDatabaseFields = {
 export type S3BucketFields = {
   s3_bucket_uri: string;
   aws_region: string;
+  access_key_id: string;
+  secret_access_key: string;
 };
+
+export type AzureEntraFields = {
+  tenant_id: string;
+  client_id: string;
+  client_secret: string;
+};
+
+export type PostgresSslMode =
+  | "disable"
+  | "allow"
+  | "prefer"
+  | "require"
+  | "verify-ca"
+  | "verify-full";
+
+export const POSTGRES_SSL_MODES: PostgresSslMode[] = [
+  "disable",
+  "allow",
+  "prefer",
+  "require",
+  "verify-ca",
+  "verify-full",
+];
 
 export type ConnectionListItem = {
   ref: string;
@@ -90,5 +115,15 @@ export function createEmptyS3Fields(): S3BucketFields {
   return {
     s3_bucket_uri: "",
     aws_region: "us-east-1",
+    access_key_id: "",
+    secret_access_key: "",
+  };
+}
+
+export function createEmptyAzureEntraFields(): AzureEntraFields {
+  return {
+    tenant_id: "",
+    client_id: "",
+    client_secret: "",
   };
 }

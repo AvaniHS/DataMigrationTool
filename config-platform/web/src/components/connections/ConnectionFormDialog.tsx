@@ -15,8 +15,13 @@ import { listConnectors } from "@/api/connectors";
 import {
   buildConnectorPayload,
   defaultAuthMethod,
+  initialAzureEntraFields,
   initialS3Fields,
   initialSqlFieldsForConnector,
+  parseAzureEntraFromPayload,
+  parseMssqlDomainFromPayload,
+  parseMysqlSslEnabled,
+  parsePostgresSslMode,
   parseS3FieldsFromPayload,
   parseSqlFieldsFromPayload,
 } from "@/components/connections/connectorPayloads";
@@ -26,9 +31,11 @@ import {
   getConnectorFormComponent,
 } from "@/components/connections/connectorRegistry";
 import type {
+  AzureEntraFields,
   ConnectionSaveRequest,
   ConnectorCatalogItem,
   ConnectorCategory,
+  PostgresSslMode,
   S3BucketFields,
   SqlDatabaseFields,
 } from "@/components/connections/types";
@@ -62,6 +69,10 @@ export function ConnectionFormDialog({
   const [sqlFields, setSqlFields] = useState<SqlDatabaseFields>(initialSqlFieldsForConnector("mysql"));
   const [s3Fields, setS3Fields] = useState<S3BucketFields>(initialS3Fields());
   const [azureServer, setAzureServer] = useState("");
+  const [mssqlDomain, setMssqlDomain] = useState("");
+  const [mysqlSslEnabled, setMysqlSslEnabled] = useState(false);
+  const [postgresSslMode, setPostgresSslMode] = useState<PostgresSslMode>("prefer");
+  const [azureEntra, setAzureEntra] = useState<AzureEntraFields>(initialAzureEntraFields());
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [testState, setTestState] = useState<TestState>("idle");
   const [testMessage, setTestMessage] = useState<string | null>(null);
@@ -93,6 +104,10 @@ export function ConnectionFormDialog({
       setSqlFields(parseSqlFieldsFromPayload(payload));
       setS3Fields(parseS3FieldsFromPayload(payload));
       setAzureServer(String(payload.server ?? payload.host ?? ""));
+      setMssqlDomain(parseMssqlDomainFromPayload(payload));
+      setMysqlSslEnabled(parseMysqlSslEnabled(payload));
+      setPostgresSslMode(parsePostgresSslMode(payload));
+      setAzureEntra(parseAzureEntraFromPayload(payload));
       const item = findCatalogItem(catalog, initialValues.connector_id);
       if (item) {
         setCategory(item.category);
@@ -105,6 +120,10 @@ export function ConnectionFormDialog({
       setSqlFields(initialSqlFieldsForConnector("mysql"));
       setS3Fields(initialS3Fields());
       setAzureServer("");
+      setMssqlDomain("");
+      setMysqlSslEnabled(false);
+      setPostgresSslMode("prefer");
+      setAzureEntra(initialAzureEntraFields());
     }
     setVerificationToken(null);
     setTestState("idle");
@@ -113,8 +132,25 @@ export function ConnectionFormDialog({
   }, [open, initialValues, catalog]);
 
   const connectorPayload = useMemo(
-    () => buildConnectorPayload(connectorId, authMethod, sqlFields, s3Fields, azureServer),
-    [authMethod, azureServer, connectorId, s3Fields, sqlFields],
+    () =>
+      buildConnectorPayload(connectorId, authMethod, sqlFields, s3Fields, {
+        azureServer,
+        mssqlDomain,
+        mysqlSslEnabled,
+        postgresSslMode,
+        azureEntra,
+      }),
+    [
+      authMethod,
+      azureEntra,
+      azureServer,
+      connectorId,
+      mssqlDomain,
+      mysqlSslEnabled,
+      postgresSslMode,
+      s3Fields,
+      sqlFields,
+    ],
   );
 
   const payload = useMemo<ConnectionSaveRequest>(
@@ -144,6 +180,10 @@ export function ConnectionFormDialog({
     setSqlFields(initialSqlFieldsForConnector(nextConnectorId));
     setS3Fields(initialS3Fields());
     setAzureServer("");
+    setMssqlDomain("");
+    setMysqlSslEnabled(false);
+    setPostgresSslMode("prefer");
+    setAzureEntra(initialAzureEntraFields());
     invalidateTest();
   };
 
@@ -267,6 +307,10 @@ export function ConnectionFormDialog({
               sqlFields={sqlFields}
               s3Fields={s3Fields}
               azureServer={azureServer}
+              mssqlDomain={mssqlDomain}
+              mysqlSslEnabled={mysqlSslEnabled}
+              postgresSslMode={postgresSslMode}
+              azureEntra={azureEntra}
               onSqlFieldsChange={(nextValue) => {
                 setSqlFields(nextValue);
                 invalidateTest();
@@ -277,6 +321,22 @@ export function ConnectionFormDialog({
               }}
               onAzureServerChange={(value) => {
                 setAzureServer(value);
+                invalidateTest();
+              }}
+              onMssqlDomainChange={(value) => {
+                setMssqlDomain(value);
+                invalidateTest();
+              }}
+              onMysqlSslEnabledChange={(value) => {
+                setMysqlSslEnabled(value);
+                invalidateTest();
+              }}
+              onPostgresSslModeChange={(value) => {
+                setPostgresSslMode(value);
+                invalidateTest();
+              }}
+              onAzureEntraChange={(nextValue) => {
+                setAzureEntra(nextValue);
                 invalidateTest();
               }}
             />

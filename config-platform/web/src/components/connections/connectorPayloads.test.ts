@@ -5,6 +5,7 @@ import {
   initialSqlFieldsForConnector,
   parseSqlFieldsFromPayload,
 } from "@/components/connections/connectorPayloads";
+import { isP12AuthMethod } from "@/components/connections/connectorRegistry";
 import type { ConnectorCatalogItem } from "@/components/connections/types";
 import { createEmptyS3Fields } from "@/components/connections/types";
 
@@ -22,39 +23,53 @@ describe("connectorPayloads", () => {
     expect(defaultAuthMethod(mysqlCatalog)).toBe("password");
   });
 
-  it("builds mysql payload with sql fields and auth method", () => {
+  it("builds mysql payload with ssl_enabled", () => {
     const sqlFields = { ...initialSqlFieldsForConnector("mysql"), host: "db.local", database: "app" };
-    const payload = buildConnectorPayload("mysql", "password", sqlFields, createEmptyS3Fields());
+    const payload = buildConnectorPayload("mysql", "password", sqlFields, createEmptyS3Fields(), {
+      mysqlSslEnabled: true,
+    });
     expect(payload).toMatchObject({
       auth_method: "password",
       host: "db.local",
       database: "app",
-      port: 3306,
+      ssl_enabled: true,
     });
   });
 
-  it("builds azure sql payload with server field", () => {
+  it("builds mssql windows login payload with domain", () => {
     const sqlFields = {
-      ...initialSqlFieldsForConnector("azure_sql_database"),
-      database: "warehouse",
-      username: "admin",
+      ...initialSqlFieldsForConnector("mssql_onprem"),
+      host: "sql01",
+      database: "app",
+      username: "svc",
       password: "secret",
     };
+    const payload = buildConnectorPayload("mssql_onprem", "windows_login", sqlFields, createEmptyS3Fields(), {
+      mssqlDomain: "CORP",
+    });
+    expect(payload).toMatchObject({
+      auth_method: "windows_login",
+      domain: "CORP",
+      username: "svc",
+    });
+  });
+
+  it("builds s3 access_key payload", () => {
     const payload = buildConnectorPayload(
-      "azure_sql_database",
-      "sql_login",
-      sqlFields,
-      createEmptyS3Fields(),
-      "myserver.database.windows.net",
+      "csv_s3_bucket",
+      "access_key",
+      initialSqlFieldsForConnector("mysql"),
+      {
+        s3_bucket_uri: "s3://bucket/prefix/",
+        aws_region: "us-east-1",
+        access_key_id: "AKIA",
+        secret_access_key: "secret",
+      },
     );
-    expect(payload).toEqual({
-      auth_method: "sql_login",
-      server: "myserver.database.windows.net",
-      database: "warehouse",
-      username: "admin",
-      password: "secret",
-      use_advanced_string: false,
-      connection_string: null,
+    expect(payload).toMatchObject({
+      auth_method: "access_key",
+      access_key_id: "AKIA",
+      secret_access_key: "secret",
     });
   });
 
@@ -64,5 +79,13 @@ describe("connectorPayloads", () => {
       host: "azure.example.net",
       database: "x",
     });
+  });
+});
+
+describe("isP12AuthMethod", () => {
+  it("recognizes P1.2 auth methods", () => {
+    expect(isP12AuthMethod("mssql_onprem", "windows_integrated")).toBe(true);
+    expect(isP12AuthMethod("azure_sql_database", "entra_service_principal")).toBe(true);
+    expect(isP12AuthMethod("mssql_onprem", "ntlm")).toBe(false);
   });
 });

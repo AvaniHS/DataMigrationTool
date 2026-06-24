@@ -1,6 +1,6 @@
 # Config Platform — Requirements (v1)
 
-**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P2 and P1.1 done; P1.2+ and P3 next.  
+**Status:** Spec complete (§12 OQ-1–22 closed). **Progress:** §11 checklists (`[x]` / `[ ]`). P0–P2 and P1.1–P1.2 done; P1.3+ and P3 next.  
 **Product:** `config-platform/` (UI + API)  
 **Based on:** Original UI toolkit ideas (refined and aligned with script-generator contract)  
 **Related:** [../docs/INTEGRATION.md](../docs/INTEGRATION.md) · [../docs/sampleConfigfile.json](../docs/sampleConfigfile.json) · [../script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md)
@@ -857,6 +857,17 @@ Secrets (`password`, `client_secret`, `access_key`) go to **`secret_ref`** in pr
 
 Script-generator and migrator consume `type` + `auth_method` + `driver_options`; token acquisition at run for Entra/MI/IAM (OQ-21).
 
+#### Cross-product consumers (script-generator / migrator)
+
+P1.2 export extends the shared contract in [sampleConfigfile.json](../docs/sampleConfigfile.json). **Config platform** authors the new fields; **downstream products must stay in sync** or `validate` / `generate` will fail on exported JSON.
+
+| Consumer | Minimum (required when P1.2 export ships) | Full auth (later) |
+|----------|-------------------------------------------|-------------------|
+| **script-generator** | Extend `DatabaseConnection` / `CsvS3Connection` models to **parse and validate** optional `auth_method`, `driver_options`, `access_key_id`, `entra`, `secret_ref` (today: `extra="forbid"` rejects them). **Compilation may still use** `connection_string` / `s3_bucket_uri` + `aws_region` until bootstrap is auth-aware. | Use `auth_method` + `driver_options` in `SourceBootstrapCompiler` when credentials are not fully embedded in `connection_string` (Entra SP, Windows auth, S3 keys, SSL flags). |
+| **migrator** | Accept same connection shape in execution config | Acquire tokens / resolve `secret_ref` at run time per `auth_method` (OQ-21) |
+
+**Rule:** Updating `sampleConfigfile.json` for P1.2 **without** updating script-generator connection models breaks the golden sample and any config exported from Connect. Track in [script-generator/docs/REQUIREMENTS.md](../script-generator/docs/REQUIREMENTS.md) §9 (contract-sync phase).
+
 ### 7.2.11 API endpoints (connectors)
 
 | Endpoint | Purpose |
@@ -1053,15 +1064,17 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 ### Phase P1.2 — Must-have auth (§7.2.2a)
 
-- [ ] `mssql_onprem` — `sql_login`, `windows_integrated`, `windows_login`
-- [ ] `azure_sql_database` — `sql_login`, `entra_service_principal`
-- [ ] `mysql` — `password` (+ optional SSL toggle)
-- [ ] `postgresql` — `password` + `sslmode` dropdown
-- [ ] `csv_s3_bucket` — `access_key` (`access_key_id`, `secret_access_key`)
-- [ ] Extended export — `auth_method`, `driver_options` (§7.2.10)
-- [ ] Update [sampleConfigfile.json](../docs/sampleConfigfile.json) + [INTEGRATION.md](../docs/INTEGRATION.md)
+- [x] `mssql_onprem` — `sql_login`, `windows_integrated`, `windows_login`
+- [x] `azure_sql_database` — `sql_login`, `entra_service_principal`
+- [x] `mysql` — `password` (+ optional SSL toggle)
+- [x] `postgresql` — `password` + `sslmode` dropdown
+- [x] `csv_s3_bucket` — `access_key` (`access_key_id`, `secret_access_key`)
+- [x] Extended export — `auth_method`, `driver_options` (§7.2.10)
+- [x] Update [sampleConfigfile.json](../docs/sampleConfigfile.json) + [INTEGRATION.md](../docs/INTEGRATION.md)
+- [x] User-friendly connection error messages (driver/credential/network); full detail in API logs
+- [ ] **script-generator contract sync** — parse P1.2 connection fields (`auth_method`, `driver_options`, `entra`, `access_key_id`, `secret_ref`); see §7.2.10 cross-product table and [script-generator REQUIREMENTS](../script-generator/docs/REQUIREMENTS.md) §9
 
-**Exit criteria:** Tier P1.2 auth methods testable from API host; export matches extended contract.
+**Exit criteria:** Tier P1.2 auth methods testable from API host; export matches extended contract. Script-generator can **validate** P1.2-shaped configs (compile may still use legacy `connection_string` until bootstrap auth work lands).
 
 ### Phase P1.3 — Azure Entra (should-have)
 
@@ -1203,7 +1216,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 
 - **P1.5 vs P3.5:** **P1.5** = `local_csv` connector (Connect UI, test, export). **P3.5** = blueprint **B1** SchemaTree + file pickers. Same feature; two exit checks.
 - **P3.5** can start after P3 B1 is in progress; migrator streaming (P9) can trail config export.
-- **Recommended next build:** **P1.2** (must-have auth) — connector registry (P1.1) complete.
+- **Recommended next build:** **P1.3** (Azure Entra MI/password) or **P3** (blueprint wizard B1–B4).
 
 ### 11.1 Phase summary (quick view)
 
@@ -1211,7 +1224,7 @@ Update tick marks in this section as you finish each item. §11.1 is the quick p
 |-------|--------|-------|
 | **P0** | [x] Complete | Shell, nav, sidebar wizard mock |
 | **P1** | [x] Complete | Flat fields — refactor in P1.1 |
-| **P1.1–P1.6** | [ ] In progress | P1.1 complete; tiered auth P1.2–P1.6 pending |
+| **P1.1–P1.6** | [ ] In progress | P1.1–P1.2 complete; P1.3–P1.6 pending |
 | **P2** | [x] Complete | Migration CRUD, introspection, M0/M2; wizard edit = P3 |
 | **P3** | [ ] In progress | Shell + mocks only; B1–B4 forms pending |
 | **P3.5** | [ ] Not started | `LOCAL_CSV` wizard wiring (after P1.5) |
@@ -1599,7 +1612,7 @@ Later:
 25. **P1.5 + P3.5:** `local_csv` connector + wizard file UX (not P1.2).  
 26. **P1.6:** AWS RDS IAM for MySQL/Postgres.  
 27. **Export** extended with `auth_method` + `driver_options`; migrator acquires tokens at run (OQ-18, OQ-21).  
-28. **Contract follow-up:** When P1.2 export lands, update [sampleConfigfile.json](../docs/sampleConfigfile.json), [INTEGRATION.md](../docs/INTEGRATION.md), and script-generator auth handling.
+28. **Contract follow-up:** When P1.2 export lands, update [sampleConfigfile.json](../docs/sampleConfigfile.json), [INTEGRATION.md](../docs/INTEGRATION.md), and **script-generator** connection models so P1.2 fields parse (minimum); full `auth_method` use in bootstrap and migrator token acquisition is a later phase (§7.2.10).
 
 ---
 

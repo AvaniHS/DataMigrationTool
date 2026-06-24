@@ -31,6 +31,23 @@ Each product is a **separate application** with its own build and deploy. Commun
 
 Config platform **produces** this file. Script generator **consumes** it.
 
+### Connection export shape (P1.2+)
+
+Each entry under `connections` includes:
+
+| Field | Purpose |
+|-------|---------|
+| `type` | Export type (`MYSQL`, `MSSQL`, `POSTGRESQL`, `CSV_S3_BUCKET`, …) |
+| `auth_method` | How the migrator authenticates (`password`, `sql_login`, `entra_service_principal`, `access_key`, …) |
+| `connection_string` | SQL connectors — URI built by config API |
+| `driver_options` | TLS/encrypt flags (`sslmode`, `ssl_enabled`, `encrypt`, …) |
+| `s3_bucket_uri` / `aws_region` | S3 file sources |
+| `access_key_id` | S3 non-secret identifier |
+| `entra` | Entra non-secrets (`tenant_id`, `client_id`) for service principal |
+| `secret_ref` | Optional vault pointer when secrets are not inlined |
+
+Secrets (`password`, `client_secret`, `secret_access_key`) may be inlined in dev exports; production should use `secret_ref`. Migrator acquires short-lived Entra/RDS tokens at run time per `auth_method` (see config-platform `REQUIREMENTS.md` §7.2.10).
+
 ---
 
 ## Script generator API (planned)

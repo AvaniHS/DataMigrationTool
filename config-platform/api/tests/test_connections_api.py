@@ -113,4 +113,6 @@ def test_export_matches_contract(client: TestClient, monkeypatch: pytest.MonkeyP
     assert export_response.status_code == 200
     exported = export_response.json()["client_crm_mysql"]
     assert exported["type"] == "MYSQL"
+    assert exported["auth_method"] == "password"
     assert exported["connection_string"] == "mysql://read_user:pass@client-crm-ip:3306/crm_db"
+    assert exported["driver_options"] == {"ssl_enabled": False}
